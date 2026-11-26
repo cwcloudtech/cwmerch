@@ -33,3 +33,7 @@ Use the CWCloud's email API
 * React for the UI (`goocommerce-ui`)
 * Flywaydb for the db migrations (first migration: reproduce the Woocommerce database schema and in the README provide a SQL script to init the migration table with the first migration with checksum for existing instances)
 * Document the product in `cwcloud-website` (public repo: https://gitlab.cwcloud.tech/oss/cwcloud/goocommerce.git) with the installation procedure (especially the database part) in a tutorial and use docker compose in the tutorial. Same in `README.md`
+
+## Licence
+
+Opensource MIT (use same licence as `~/cwclock`).
