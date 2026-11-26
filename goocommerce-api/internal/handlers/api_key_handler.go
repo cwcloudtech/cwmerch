@@ -1,0 +1,95 @@
+package handlers
+
+import (
+	"encoding/json"
+	"net/http"
+	"time"
+
+	"github.com/go-chi/chi/v5"
+
+	"goocommerce-api/internal/middleware"
+	"goocommerce-api/internal/models"
+	"goocommerce-api/internal/store"
+	"goocommerce-api/internal/utils"
+)
+
+type ApiKeyHandler struct {
+	auditor
+	keys *store.ApiKeyStore
+}
+
+func NewApiKeyHandler(keys *store.ApiKeyStore, audit *store.AuditStore) *ApiKeyHandler {
+	return &ApiKeyHandler{auditor: newAuditor(audit), keys: keys}
+}
+
+// List returns the connected user's own API keys - this is self-service,
+// there is no admin view over other users' keys.
+func (h *ApiKeyHandler) List(w http.ResponseWriter, r *http.Request) {
+	userID, _ := middleware.UserIDFromContext(r.Context())
+
+	keys, err := h.keys.ListByUser(r.Context(), userID)
+	if err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, keys)
+}
+
+type apiKeyPayload struct {
+	Description string  `json:"description"`
+	ExpiresAt   *string `json:"expiresAt"`
+}
+
+func (h *ApiKeyHandler) Create(w http.ResponseWriter, r *http.Request) {
+	userID, _ := middleware.UserIDFromContext(r.Context())
+
+	var p apiKeyPayload
+	if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
+		writeError(w, http.StatusBadRequest, "Invalid request body", CodeInvalidRequestBody)
+		return
+	}
+	if utils.IsBlank(p.Description) {
+		writeError(w, http.StatusBadRequest, "Please add a description", CodeApiKeyDescription)
+		return
+	}
+
+	var expiresAt *time.Time
+	if p.ExpiresAt != nil && utils.IsNotBlank(*p.ExpiresAt) {
+		t, err := time.Parse(time.RFC3339, *p.ExpiresAt)
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "Invalid expiration date", CodeInvalidExpiration)
+			return
+		}
+		expiresAt = &t
+	}
+
+	key, token, err := h.keys.Create(r.Context(), userID, p.Description, expiresAt)
+	if err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	// An API key authenticates as its owner on every endpoint, so minting and
+	// revoking one is a credential change. The token itself is never in the
+	// detail - only its description, which is what identifies it in the UI.
+	h.record(r, models.AuditApiKeyCreated, models.AuditSubjectApiKey, key.ID,
+		map[string]any{"description": key.Description})
+	writeJSON(w, http.StatusCreated, models.ApiKeyCreated{
+		ID:          key.ID,
+		Description: key.Description,
+		ExpiresAt:   key.ExpiresAt,
+		CreatedAt:   key.CreatedAt,
+		Token:       token,
+	})
+}
+
+func (h *ApiKeyHandler) Delete(w http.ResponseWriter, r *http.Request) {
+	userID, _ := middleware.UserIDFromContext(r.Context())
+	id := chi.URLParam(r, "id")
+
+	if err := h.keys.Delete(r.Context(), userID, id); err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	h.record(r, models.AuditApiKeyDeleted, models.AuditSubjectApiKey, id, nil)
+	writeJSON(w, http.StatusOK, map[string]string{"id": id})
+}

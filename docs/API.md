@@ -1,0 +1,221 @@
+# goocommerce API contract
+
+The authoritative, always-in-sync description is the OpenAPI document generated
+from the router: `GET /openapi.json`, rendered by Swagger UI at `GET /` on the
+API. This file is the human overview of the same surface.
+
+## Conventions
+
+* Base path `/v1`. JSON in and out (`Content-Type: application/json`), except
+  uploads (`multipart/form-data`) and PDF exports (`application/pdf`).
+* Authentication: `Authorization: Bearer <jwt>` (from login) **or**
+  `X-Api-Key: <long-term API key>` (created under `/v1/users/me/api-keys`).
+* Errors: `{"message": "...", "i18n_code": "errors.xxx"}`. A 5xx never carries
+  its cause; the `X-Cid` response header is the correlation id to give support.
+* Lists: `?page=1&perPage=20` (perPage max 100) answer
+  `{"items": [...], "total": 123, "page": 1, "perPage": 20, "totalPages": 7}`.
+* Money is a JSON number in the shop currency, rounded to the shop's decimals.
+* Dates are RFC 3339 strings (UTC); date filters accept `YYYY-MM-DD`.
+* Order statuses are WooCommerce's without the `wc-` prefix:
+  `pending, processing, on-hold, completed, cancelled, refunded, failed, checkout-draft`.
+* Roles (`role` on a user): `superuser` (WordPress *administrator*), `manager`
+  (WooCommerce *shop_manager*), `customer` (any other WordPress role),
+  `disabled`, `ban`. The admin area is for `superuser` and `manager`; user
+  administration, audit and IP bans are `superuser` only.
+
+## Public / infrastructure
+
+| Method & path | Notes |
+|---|---|
+| `GET /` | Swagger UI |
+| `GET /openapi.json` | OpenAPI 3 document |
+| `GET /metrics` | Prometheus |
+| `GET /v1/health`, `GET /v1/manifest` | liveness, build manifest `{version, sha, details}` |
+| `POST /v1/contact` | `{email, subject, message, name, firstname}` → forwarded to CWCloud `/v1/contactreq` |
+| `GET /v1/media/{path}` | uploaded images (when goocommerce owns the uploads folder) |
+
+## Authentication & account
+
+| Method & path | Body / answer |
+|---|---|
+| `POST /v1/users/` | register a customer `{email, password, name, surname}` → `UserResponse` |
+| `POST /v1/users/login` | `{email, password}` (email **or** WordPress username) → `UserResponse` or `{mfaRequired:true, challengeToken, hasTotp, hasWebAuthn}` |
+| `POST /v1/users/login/mfa/totp` | `{challengeToken, code}` → `UserResponse` |
+| `POST /v1/users/login/mfa/webauthn/begin` / `finish` | WebAuthn (YubiKey) login ceremony |
+| `POST /v1/users/forgot-password` | `{email}` → always 200 |
+| `POST /v1/users/reset-password` | `{token, password, confirmPassword}` |
+| `GET /v1/oidc/` | `[{name:"google", label:"Google"}]` enabled providers |
+| `GET /v1/oidc/google/login?redirect=/my-account` | 302 to Google; back to UI `/oidc/callback#token=...` |
+| `GET /v1/users/me` / `PUT /v1/users/me` | `{name, surname, displayName, password?, confirmPassword?}` |
+| `POST /v1/users/logout` | audit only |
+| `GET/PUT /v1/users/me/addresses` | `{billing: Address, shipping: Address}` |
+| `GET /v1/users/me/orders` | paged `Order` list of the caller |
+| `GET /v1/users/me/orders/{id}` | one of the caller's orders |
+| `GET /v1/users/me/downloads` | `[{productId, productName, downloadId, name, url, remaining, expiresAt}]` |
+| `GET/POST /v1/users/me/api-keys`, `DELETE /{id}` | long-term API keys (`{description, expiresAt?}` → plaintext `token` once) |
+| `GET /v1/users/me/mfa` | `{totpEnabled, webauthn:[{id,name,createdAt}]}` |
+| `POST /v1/users/me/mfa/totp/setup` | `{secret, otpauthUrl, qrCode(data URI)}` |
+| `POST /v1/users/me/mfa/totp/confirm` `{code}`, `DELETE /v1/users/me/mfa/totp` | |
+| `POST /v1/users/me/mfa/webauthn/register/begin` / `finish`, `DELETE /webauthn/{credentialId}` | YubiKey / security keys |
+
+`UserResponse` = `{id, email, name, surname, displayName, username, role, token, mfaEnabled, i18nCode?}`.
+
+`Address` = `{firstName, lastName, company, address1, address2, city, state, postcode, country, email, phone}`
+(`email` only on billing).
+
+## Public shop
+
+| Method & path | Notes |
+|---|---|
+| `GET /v1/shop/settings` | `ShopSettings` (below) |
+| `GET /v1/shop/countries` | `[{code, name, states:[{code,name}]}]` restricted to the selling countries |
+| `GET /v1/shop/products` | `?search&category(slug or id)&tag&minPrice&maxPrice&onSale&featured&orderby=menu_order|date|price|price-desc|popularity|rating|title&page&perPage` → paged `Product` (no `variations`) |
+| `GET /v1/shop/products/{idOrSlug}` | `Product` with `variations` and `related` (ids) |
+| `GET /v1/shop/products/{id}/reviews` | `[Review]` approved only |
+| `POST /v1/shop/products/{id}/reviews` | `{rating, review, author?, email?}` (auth optional; obeys "verified owners only") |
+| `GET /v1/shop/categories` | `[Category]` (flat, `parent` gives the tree) |
+| `GET /v1/shop/tags` | `[Tag]` |
+| `POST /v1/shop/cart` | price a cart: `CartRequest` → `Cart` |
+| `POST /v1/shop/checkout` | `CheckoutRequest` → 201 `{order: Order, paymentInstructions, token?}` |
+| `GET /v1/shop/orders/{id}?key=wc_order_xxx` | "order received" page |
+
+`ShopSettings`:
+```json
+{"name":"My shop","description":"","currency":"EUR","currencySymbol":"€","currencyPosition":"right_space",
+ "thousandSeparator":" ","decimalSeparator":",","decimals":2,"weightUnit":"kg","dimensionUnit":"cm",
+ "calcTaxes":true,"pricesIncludeTax":true,"taxDisplayShop":"incl","taxDisplayCart":"incl",
+ "enableCoupons":true,"enableReviews":true,"enableReviewRating":true,"reviewRatingRequired":true,
+ "verifiedOwnersOnly":false,"guestCheckout":true,"signupAtCheckout":true,
+ "defaultCountry":"FR","allowedCountries":["FR","BE"],"shipToCountries":["FR","BE"],
+ "storeAddress":{"address1":"","address2":"","city":"","postcode":"","country":"FR","state":""},
+ "paymentGateways":[{"id":"bacs","title":"Direct bank transfer","description":"..."}],
+ "contactEnabled":true,"oidcProviders":["google"],"version":"1.0.0"}
+```
+
+`Product`:
+```json
+{"id":12,"name":"Hoodie","slug":"hoodie","type":"simple|variable|grouped|external","status":"publish|draft|pending|private",
+ "featured":false,"catalogVisibility":"visible|catalog|search|hidden","description":"<p>html</p>","shortDescription":"",
+ "sku":"H-1","price":42,"regularPrice":45,"salePrice":42,"dateOnSaleFrom":null,"dateOnSaleTo":null,"onSale":true,
+ "priceMin":42,"priceMax":42,
+ "taxStatus":"taxable|shipping|none","taxClass":"","manageStock":true,"stockQuantity":10,
+ "stockStatus":"instock|outofstock|onbackorder","backorders":"no|notify|yes","lowStockAmount":null,
+ "soldIndividually":false,"weight":"0.5","length":"","width":"","height":"","shippingClass":"",
+ "virtual":false,"downloadable":false,"downloads":[{"id":"uuid","name":"file","file":"https://..."}],
+ "downloadLimit":-1,"downloadExpiry":-1,"externalUrl":"","buttonText":"","purchaseNote":"","menuOrder":0,
+ "reviewsAllowed":true,"averageRating":4.5,"ratingCount":2,"totalSales":7,
+ "categories":[{"id":3,"name":"Clothing","slug":"clothing"}],"tags":[{"id":5,"name":"winter","slug":"winter"}],
+ "images":[{"id":40,"src":"https://.../hoodie.jpg","name":"hoodie","alt":""}],
+ "attributes":[{"id":1,"name":"Color","slug":"pa_color","position":0,"visible":true,"variation":true,"options":["Blue","Red"]}],
+ "defaultAttributes":[{"slug":"pa_color","option":"Blue"}],
+ "variations":[Variation],"upsellIds":[],"crossSellIds":[],"groupedProducts":[],"related":[13,14],
+ "createdAt":"...","updatedAt":"..."}
+```
+`Variation` = `{id, parentId, sku, description, price, regularPrice, salePrice, onSale, dateOnSaleFrom, dateOnSaleTo,
+status, virtual, downloadable, manageStock, stockQuantity, stockStatus, backorders, weight, length, width, height,
+shippingClass, taxClass, image:{id,src}|null, attributes:[{slug, name, option}], menuOrder}`
+(an empty `option` = "any").
+
+`Category` = `{id, name, slug, parent, description, count, image:{id,src}|null, menuOrder}`; `Tag` = `{id, name, slug, description, count}`.
+`Review` = `{id, productId, productName, reviewer, reviewerEmail, review, rating, verified, status:"approved|hold|spam|trash", createdAt}`.
+
+`CartRequest`:
+```json
+{"items":[{"productId":12,"variationId":0,"quantity":2}],"coupons":["WELCOME10"],
+ "customer":{"country":"FR","state":"","postcode":"75001","city":"Paris"},"shippingMethod":"flat_rate:3"}
+```
+`Cart`:
+```json
+{"items":[{"key":"12-0","productId":12,"variationId":0,"name":"Hoodie","sku":"H-1","image":"https://...",
+   "attributes":[{"name":"Color","option":"Blue"}],"quantity":2,"price":42,"subtotal":84,"subtotalTax":14,
+   "total":75.6,"totalTax":12.6,"maxQuantity":10}],
+ "coupons":[{"code":"welcome10","discount":8.4,"discountTax":1.4}],
+ "subtotal":84,"subtotalTax":14,"discountTotal":8.4,"discountTax":1.4,"shippingTotal":5,"shippingTax":1,
+ "taxTotal":13.6,"total":81.6,"taxes":[{"rateId":1,"label":"TVA","amount":13.6}],
+ "shippingRates":[{"id":"flat_rate:3","methodId":"flat_rate","instanceId":3,"label":"Flat rate","cost":5,"tax":1}],
+ "chosenShippingMethod":"flat_rate:3","needsShipping":true,"currency":"EUR",
+ "notices":[{"type":"error|notice","code":"cart.outOfStock","message":"..."}]}
+```
+Displayed prices follow `taxDisplayCart`; `subtotal`/`total` are always **excluding** tax and the `*Tax` fields carry the tax (WooCommerce's own split), `total` of the cart is the grand total to pay.
+
+`CheckoutRequest` = `CartRequest` minus `customer`, plus
+`{billing: Address, shipping: Address, shipToDifferentAddress, paymentMethod:"bacs|cheque|cod", customerNote, createAccount, accountPassword}`.
+
+`Order`:
+```json
+{"id":101,"number":"101","orderKey":"wc_order_abc","status":"processing","currency":"EUR",
+ "createdAt":"...","updatedAt":"...","paidAt":null,"completedAt":null,"customerId":3,"customerNote":"",
+ "billing":Address,"shipping":Address,"paymentMethod":"bacs","paymentMethodTitle":"Direct bank transfer","transactionId":"",
+ "pricesIncludeTax":true,
+ "lineItems":[{"id":1,"productId":12,"variationId":0,"name":"Hoodie","sku":"H-1","quantity":2,"subtotal":70,"subtotalTax":14,"total":63,"totalTax":12.6,"meta":[{"key":"Color","value":"Blue"}]}],
+ "shippingLines":[{"id":2,"methodId":"flat_rate","instanceId":3,"methodTitle":"Flat rate","total":5,"totalTax":1}],
+ "feeLines":[],"couponLines":[{"id":3,"code":"welcome10","discount":7,"discountTax":1.4}],
+ "taxLines":[{"id":4,"rateId":1,"label":"TVA","compound":false,"taxTotal":12.6,"shippingTaxTotal":1,"ratePercent":20}],
+ "refunds":[{"id":110,"reason":"","amount":10,"createdAt":"...","refundedBy":1}],
+ "discountTotal":7,"discountTax":1.4,"shippingTotal":5,"shippingTax":1,"cartTax":12.6,"totalTax":13.6,"total":81.6,
+ "totalRefunded":0,"createdVia":"checkout|admin|goocommerce","customerIpAddress":"","customerUserAgent":""}
+```
+
+## Admin (role `manager` or `superuser`)
+
+| Area | Endpoints |
+|---|---|
+| Dashboard | `GET /v1/admin/dashboard?from&to` → `{summary: ReportSummary, sales: [Interval], topProducts, lowStock, recentOrders}` |
+| Products | `GET /v1/admin/products?search&status&type&category&stockStatus&orderby&order&page&perPage`, `POST /v1/admin/products`, `GET/PUT/DELETE /v1/admin/products/{id}` (`?force=true` deletes, else trash), `POST /{id}/duplicate` |
+| Variations | `GET/POST /v1/admin/products/{id}/variations`, `PUT/DELETE /v1/admin/products/{id}/variations/{variationId}`, `POST /v1/admin/products/{id}/variations/generate` (all combinations) |
+| Categories | `GET/POST /v1/admin/categories`, `PUT/DELETE /v1/admin/categories/{id}` |
+| Tags | `GET/POST /v1/admin/tags`, `PUT/DELETE /v1/admin/tags/{id}` |
+| Attributes | `GET/POST /v1/admin/attributes`, `PUT/DELETE /{id}`, `GET/POST /v1/admin/attributes/{id}/terms`, `PUT/DELETE /v1/admin/attributes/{id}/terms/{termId}` — `Attribute` = `{id, name, slug, type, orderBy, hasArchives}` |
+| Shipping classes | `GET/POST /v1/admin/shipping/classes`, `PUT/DELETE /{id}` |
+| Media | `POST /v1/admin/media` (multipart `file`) → `{id, src, name, alt}`, `GET /v1/admin/media?page` |
+| Orders | `GET /v1/admin/orders?status&search&customer&from&to&page&perPage`, `POST /v1/admin/orders` (manual order, `CheckoutRequest`-like plus `status`, `customerId`), `GET/PUT/DELETE /v1/admin/orders/{id}` (PUT `{status?, billing?, shipping?, customerNote?, transactionId?}`; status changes send the WooCommerce emails), `GET/POST /v1/admin/orders/{id}/notes` (`{note, customerNote}`), `DELETE /notes/{noteId}`, `POST /v1/admin/orders/{id}/refunds` (`{amount, reason, lineItems:[{id, quantity, refundTotal}], restock}`), `POST /v1/admin/orders/{id}/emails` (`{type:"customer_invoice|new_order|customer_processing_order|customer_completed_order"}`) |
+| Customers | `GET /v1/admin/customers?search&page`, `GET/PUT /v1/admin/customers/{id}` (`{firstName,lastName,email,billing,shipping}`), `GET /v1/admin/customers/{id}/orders` — `Customer` = `{id, email, username, firstName, lastName, role, ordersCount, totalSpent, billing, shipping, createdAt, lastOrderAt}` |
+| Coupons | `GET/POST /v1/admin/coupons`, `GET/PUT/DELETE /v1/admin/coupons/{id}` — `Coupon` = `{id, code, amount, discountType:"percent|fixed_cart|fixed_product", description, dateExpires, usageCount, individualUse, productIds, excludedProductIds, usageLimit, usageLimitPerUser, limitUsageToXItems, freeShipping, productCategories, excludedProductCategories, excludeSaleItems, minimumAmount, maximumAmount, emailRestrictions, status}` |
+| Reviews | `GET /v1/admin/reviews?status&product&page`, `PUT /v1/admin/reviews/{id}` (`{status, review?, rating?}`), `DELETE /v1/admin/reviews/{id}`, `POST /v1/admin/reviews/{id}/reply` (`{review}`) |
+| Settings | `GET /v1/admin/settings` → `{options: {name: value}, fields: [{name, group, type, label, choices?}]}`, `PUT /v1/admin/settings` `{options: {...}}` (only whitelisted WooCommerce option names) |
+| Taxes | `GET /v1/admin/taxes?class`, `POST /v1/admin/taxes`, `PUT/DELETE /v1/admin/taxes/{id}` — `TaxRate` = `{id, country, state, postcodes[], cities[], rate, name, priority, compound, shipping, order, class}`; `GET/POST /v1/admin/tax-classes` (`{name}`), `DELETE /v1/admin/tax-classes/{slug}` |
+| Shipping zones | `GET/POST /v1/admin/shipping/zones`, `PUT/DELETE /v1/admin/shipping/zones/{id}` (`{name, order, locations:[{code, type:"country|state|postcode|continent"}]}`), `POST /v1/admin/shipping/zones/{id}/methods` (`{methodId:"flat_rate|free_shipping|local_pickup"}`), `PUT/DELETE /v1/admin/shipping/zones/{id}/methods/{instanceId}` (`{enabled, order, settings:{title, cost, tax_status, min_amount, requires, ignore_discounts, class_cost_<id>, no_class_cost, type}}`). Zone `0` is "Locations not covered by your other zones". |
+| Payments | `GET /v1/admin/payment-gateways` → `[{id, title, description, enabled, order, settings}]`, `PUT /v1/admin/payment-gateways/{id}` `{enabled, settings}` (bacs `accounts` too) |
+| Emails | `GET /v1/admin/emails` → `[{id, title, description, customerEmail, enabled, recipient, subject, heading, additionalContent, emailType}]`, `PUT /v1/admin/emails/{id}` |
+| Reports | `GET /v1/admin/reports/summary?from&to` → `ReportSummary {grossSales, netSales, orders, itemsSold, refunds, discount, shipping, taxes, averageOrderValue, newCustomers}`; `GET /v1/admin/reports/sales?from&to&interval=day|week|month|year` → `{intervals:[{date, orders, grossSales, netSales, itemsSold, refunds, taxes, shipping}]}`; `GET /v1/admin/reports/top-products?from&to&limit`; `GET /v1/admin/reports/top-categories?from&to&limit`; `GET /v1/admin/reports/stock?type=low|out|all&page`; `GET /v1/admin/reports/customers?from&to&page` |
+| Accounting | `GET /v1/admin/accounting/turnover?year&format=json|pdf` (chiffre d'affaires per month), `GET /v1/admin/accounting/balance?year&format=json|pdf` (balance des comptes), `GET /v1/admin/accounting/ledger?year&format=json|pdf` (grand livre) |
+
+Superuser only: `GET /v1/admin/users?search&role&page`, `PUT /v1/admin/users/{id}` (`{role:"superuser|manager|customer|disabled|ban"}`), `DELETE /v1/admin/users/{id}`, `POST /v1/admin/users/{id}/disable-mfa`, `GET /v1/admin/users/{id}/ips`, `GET /v1/admin/audit?page&action&userId`, `GET /v1/admin/ip-bans/`, `GET /v1/admin/ip-bans/stats`, `PUT /v1/admin/ip-bans/` (`{ip, action:"ban|unban", motif}`).
+
+## AI assistant (any signed-in user)
+
+Same contract as cwclock:
+
+* `GET /v1/ai/providers`, `GET /v1/ai/shareable-emails?q=`
+* `GET/POST /v1/ai/connections/`, `POST /v1/ai/connections/order` (`{ids}`), `PUT/DELETE /v1/ai/connections/{id}`,
+  `GET/POST /v1/ai/connections/{id}/shares` (`{email, role:"user"}`), `DELETE /v1/ai/connections/{id}/shares/{userId}`
+  — `AIConnection` = `{id, ownerId, name, provider, baseUrl, model, maxTokens, hasToken, role:"owner|user", createdAt, updatedAt}`, the write payload adds `token`.
+* `POST /v1/ai/chat` `{message, connectionId?, conversationId?, messages?:[{role, message}], settings?}` →
+  `{status, message (Markdown answer), usage, model, conversationId, title, downloadTtlSeconds?}`.
+  The agent loop calls goocommerce's own API **with the caller's JWT** (tool `goocommerce_api`), guided by the embedded Markdown skills;
+  generated PDFs (accounting exports) come back as links to `GET /v1/ai-downloads/{id}`.
+* `GET /v1/ai/conversations/`, `GET /v1/ai/conversations/{id}`, `DELETE /v1/ai/conversations/` (`{ids?, all?}`)
+* `POST /v1/ai/cwcloud/adapter` — CWCloud external adapter: `{message}` or `{messages:[{role, message}]}`, optional `adapter` (subscription name) → `{status:"ok", message, usage:{prompt_tokens, completion_tokens, total_tokens}}`.
+
+## Added since the first draft
+
+| Method & path | Notes |
+|---|---|
+| `GET /v1/shop/appearance` | storefront look: `{name, tagline, logo, favicon, theme, colors{primary, primaryText, secondary, accent, background, surface, text, muted, border, header, headerText, footer, footerText, sale}, fonts{heading, body}, radius, banner{enabled, autoplay, intervalSeconds, height, slides[{image, mobileImage, title, subtitle, buttonText, buttonLink, align, overlay, textColor}]}, announcement, homeSections[{type, title, limit, content}], social, contact, footerText, updatedAt}` |
+| `GET /v1/shop/themes` | colour/font presets: classic, garden, rose, ocean, sunset, midnight, minimal, luxury |
+| `GET /v1/shop/custom.css` | theme CSS variables (`--goo-*`) + the admin's custom CSS |
+| `GET/PUT /v1/admin/appearance/` | edit the appearance (adds `customCss`) |
+| `GET /v1/seo/html?path=/product/slug` | the UI's `index.html` with the page's `<head>` (title, description, canonical, Open Graph, Twitter, JSON-LD) — the UI's nginx proxies public page navigations here |
+| `GET /sitemap.xml`, `GET /robots.txt` | SEO |
+| `GET /v1/countries`, `GET /v1/currencies` | every country (`{iso, code, name, continent, states}`) / currency (`{code, symbol}`) |
+| `POST /v1/admin/products/{id}/restore` | take a product out of the trash |
+| `GET /v1/users/me/downloads/{productId}/{downloadId}` | consume a download, answers `{url}` |
+| `GET /v1/admin/reviews/{id}` | one review |
+
+Cart/checkout lines accept `attributes` as a map (`{"pa_color":"Blue"}`) or a list
+(`[{"slug":"pa_color","option":"Blue"}]`) to pick "any" variation attributes. Checkout answers `409`
+with the priced `cart` when the cart has error notices (out of stock, invalid coupon…).
+
+**API-only mode** (`GOOCOMMERCE_API_ONLY=true`): the cart, checkout, order-received and customer
+account shop routes are not mounted; everything else (admin, reports, accounting, AI, auth, MFA, API keys)
+is. goocommerce then serves as an AI agent and back-office API next to an unchanged WooCommerce.

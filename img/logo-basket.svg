@@ -1,0 +1,56 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 751 751" width="1502" height="1502">
+  <defs>
+    <linearGradient id="w" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f7cf8a"/><stop offset="1" stop-color="#c98236"/>
+    </linearGradient>
+    <linearGradient id="rim" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#e9a95a"/><stop offset="1" stop-color="#b5732c"/>
+    </linearGradient>
+    <linearGradient id="apple" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ff7468"/><stop offset="1" stop-color="#c8231d"/>
+    </linearGradient>
+    <linearGradient id="pear" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#b6e57c"/><stop offset="1" stop-color="#5ea635"/>
+    </linearGradient>
+    <linearGradient id="bread" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#f6cf86"/><stop offset="1" stop-color="#cf8b3c"/>
+    </linearGradient>
+    <clipPath id="body"><path d="M338 502 L484 502 L472 614 L348 614 Z"/></clipPath>
+  </defs>
+  <g stroke="#0f2f5c" stroke-linejoin="round" stroke-linecap="round">
+    <!-- handle -->
+    <path d="M362 504 C360 430 466 430 462 504" fill="none" stroke-width="13"/>
+    <path d="M362 504 C360 430 466 430 462 504" fill="none" stroke="#e3a356" stroke-width="6"/>
+    <path d="M336 502 C344 462 478 462 488 502 Z" fill="#7a4719" stroke-width="5"/>
+    <!-- goods -->
+    <g transform="rotate(-20 388 470)">
+      <rect x="376" y="428" width="24" height="84" rx="12" fill="url(#bread)" stroke-width="4.5"/>
+      <path d="M381 446 L395 440 M381 462 L395 456 M381 478 L395 472" stroke="#a96a26" stroke-width="3"/>
+    </g>
+    <circle cx="418" cy="488" r="19" fill="url(#apple)" stroke-width="4.5"/>
+    <path d="M418 469 C419 461 424 457 430 456" fill="none" stroke="#5a3a18" stroke-width="3.5"/>
+    <path d="M424 462 C432 456 440 458 442 462 C436 467 429 467 424 462 Z" fill="#69b23c" stroke-width="2.5"/>
+    <ellipse cx="411" cy="481" rx="5" ry="7" fill="#fff" stroke="none" opacity="0.55"/>
+    <circle cx="449" cy="492" r="15" fill="url(#pear)" stroke-width="4.5"/>
+    <line x1="452" y1="478" x2="462" y2="446" stroke="#3e8f3a" stroke-width="4"/>
+    <g transform="translate(463 440)">
+      <g fill="#ff8fb8" stroke-width="3">
+        <circle cx="0" cy="-8" r="6.5"/><circle cx="7.6" cy="-2.5" r="6.5"/><circle cx="4.7" cy="6.5" r="6.5"/>
+        <circle cx="-4.7" cy="6.5" r="6.5"/><circle cx="-7.6" cy="-2.5" r="6.5"/>
+      </g>
+      <circle r="4.5" fill="#ffd34d" stroke-width="2.5"/>
+    </g>
+    <!-- wicker body -->
+    <path d="M338 502 L484 502 L472 614 L348 614 Z" fill="url(#w)" stroke="none"/>
+    <g clip-path="url(#body)" fill="none" stroke="#a5662a" stroke-width="3">
+      <path d="M340 530 C380 524 440 524 484 530 M340 556 C380 550 440 550 484 556 M340 582 C380 576 440 576 484 582"/>
+      <path d="M370 502 L376 614 M402 502 L404 614 M432 502 L432 614 M462 502 L458 614"/>
+      <path d="M350 516 L478 516 M350 543 L478 543 M350 569 L478 569 M350 595 L478 595" stroke="#fbe0aa" stroke-width="1.6" opacity="0.7"/>
+    </g>
+    <path d="M338 502 L484 502 L472 614 L348 614 Z" fill="none" stroke-width="6"/>
+    <path d="M352 598 C395 607 430 607 469 598" fill="none" stroke="#9d5e22" stroke-width="3" opacity="0.6"/>
+    <!-- rim -->
+    <rect x="331" y="490" width="160" height="20" rx="10" fill="url(#rim)" stroke-width="6"/>
+    <path d="M341 496 L481 496" stroke="#fbd99a" stroke-width="3" opacity="0.8"/>
+  </g>
+</svg>

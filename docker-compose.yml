@@ -1,0 +1,82 @@
+# goocommerce, fresh install: MySQL, the Flyway migrations, the API and the UI.
+#
+#   cp .env.example .env   # then edit the secrets
+#   docker compose up -d --build
+#
+# The UI is on http://localhost:3000, the API (Swagger UI at /) on
+# http://localhost:8080. The first account registered becomes the shop's
+# administrator.
+#
+# Alongside an EXISTING WordPress/WooCommerce: drop the `db` service, point
+# MYSQL_* at the WordPress database, set WP_TABLE_PREFIX, and initialise
+# Flyway's history first (goocommerce-db/README.md). API only (AI agent for
+# WooCommerce, no shop UI): `docker compose up -d db flyway api` with
+# GOOCOMMERCE_API_ONLY=true.
+services:
+  db:
+    image: mysql:8.4
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-wordpress}
+      MYSQL_USER: ${MYSQL_USER:-wordpress}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-wordpress}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root}
+    volumes:
+      - db-data:/var/lib/mysql
+    ports:
+      - "127.0.0.1:3306:3306"
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p${MYSQL_ROOT_PASSWORD:-root}"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  flyway:
+    image: flyway/flyway:10-alpine
+    depends_on:
+      db:
+        condition: service_healthy
+    command:
+      - -url=jdbc:mysql://${MYSQL_HOST:-db}:${MYSQL_PORT:-3306}/${MYSQL_DATABASE:-wordpress}?allowPublicKeyRetrieval=true&useSSL=false
+      - -user=${MYSQL_USER:-wordpress}
+      - -password=${MYSQL_PASSWORD:-wordpress}
+      - -placeholders.table_prefix=${WP_TABLE_PREFIX:-wp_}
+      - -locations=filesystem:/flyway/sql
+      - -connectRetries=20
+      - migrate
+    volumes:
+      - ./goocommerce-db:/flyway/sql:ro
+
+  api:
+    build:
+      context: .
+      target: api
+    image: ${REGISTRY:-registry.cwcloud.tech}/goocommerce-api:${VERSION:-latest}
+    depends_on:
+      flyway:
+        condition: service_completed_successfully
+    env_file: .env
+    environment:
+      MYSQL_HOST: ${MYSQL_HOST:-db}
+    ports:
+      - "8080:8080"
+    volumes:
+      - uploads:/uploads
+    tmpfs:
+      - /storage:size=128m,uid=10001
+
+  ui:
+    build:
+      context: .
+      target: ui
+    image: ${REGISTRY:-registry.cwcloud.tech}/goocommerce-ui:${VERSION:-latest}
+    depends_on:
+      - api
+    environment:
+      GOOCOMMERCE_API_URL: ${GOOCOMMERCE_API_URL:-http://localhost:8080}
+      GOOCOMMERCE_API_INTERNAL_URL: http://api:8080
+    ports:
+      - "3000:80"
+
+volumes:
+  db-data:
+  uploads:
