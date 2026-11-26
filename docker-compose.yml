@@ -10,8 +10,8 @@
 # Alongside an EXISTING WordPress/WooCommerce: drop the `db` service, point
 # MYSQL_* at the WordPress database, set WP_TABLE_PREFIX, and initialise
 # Flyway's history first (goocommerce-db/README.md). API only (AI agent for
-# WooCommerce, no shop UI): `docker compose up -d db flyway api` with
-# GOOCOMMERCE_API_ONLY=true.
+# WooCommerce, no shop UI): GOOCOMMERCE_API_ONLY=true and `docker compose up -d
+# flyway api` (remove `db` from flyway's depends_on when using your own DB).
 services:
   db:
     image: mysql:8.4
