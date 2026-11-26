@@ -11,6 +11,8 @@ Provide exactly the same features plus:
 * Prometheus metrics
 * Swagger/OAS page at root endpoint with payload's and query param documentation like the project references below
 * Endpoint for CWCloud AI adapters `/v1/ai/cwcloud/adapter` like the project references below
+* Export PDF "Balance / Grand livre" and _chiffre d'affaire_ for accounting department (and all endpoint api like this as tool for ai assistants)
+* Forgotten password and contact form based on CWCloud contactreq endpoint (like `~/uprodit`)
 
 A goocommerce as to be able to work alongside an existing woocommerce instance.
 
@@ -25,7 +27,7 @@ Use the CWCloud's email API
 ## Project references
 
 * `~/jsa-api`: connect to the MySQL database and woocommerce tables
-* `~/cwclock`, `~/strong-fish` and `~/shadai`: for all features described earlier
+* `~/cwclock`, `~/strong-fish`, `~/uprodit` and `~/shadai`: for all features described earlier
 
 ## Technologies
 
