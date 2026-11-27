@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { toast } from "react-toastify";
-import { FiArrowDown, FiArrowUp, FiPlus, FiTrash2 } from "react-icons/fi";
+import { FiArrowDown, FiArrowUp, FiPlus, FiRotateCcw, FiTrash2 } from "react-icons/fi";
 import { api, asArray } from "../../api/client";
 import { useAsync } from "../../lib/useAsync";
 import { applyAppearance, COLOR_KEYS, cssVarsFor, GOOGLE_FONTS, loadGoogleFonts, SYSTEM_FONTS } from "../../lib/appearance";
@@ -19,7 +19,7 @@ const DEFAULTS = {
   tagline: "",
   logo: null,
   favicon: "",
-  theme: "classic",
+  theme: "",
   colors: {},
   fonts: { heading: "", body: "" },
   radius: 8,
@@ -30,6 +30,75 @@ const DEFAULTS = {
   contact: { phone: "", email: "", address: "" },
   footerText: "",
   customCss: "",
+};
+
+const EMPTY_DETECTED = { name: "", tagline: "", colors: {}, fonts: {}, sources: {} };
+const HEX6 = /^#[0-9a-f]{6}$/i;
+
+// effective is what the storefront shows: each override, else the detected
+// value (Divi, WooCommerce, WordPress, else cwmerch's default).
+const effective = (a, d) => {
+  const colors = {};
+  COLOR_KEYS.forEach(([k]) => {
+    colors[k] = (a.colors?.[k] || "").trim() || d.colors?.[k] || "";
+  });
+  return {
+    ...a,
+    name: a.name || d.name,
+    tagline: a.tagline || d.tagline,
+    colors,
+    fonts: { heading: a.fonts?.heading || d.fonts?.heading || "", body: a.fonts?.body || d.fonts?.body || "" },
+  };
+};
+
+// SourceBadge says where an inherited value comes from.
+const SourceBadge = ({ source }) => {
+  const { t } = useI18n();
+  if (!source) return null;
+  return <span className={`source-badge source-${source}`}>{t(`appearance.source.${source}`)}</span>;
+};
+
+// ColorOverride edits one color override; empty = the detected value (shown
+// as the placeholder, with its source).
+const ColorOverride = ({ name, value, detected, source, onChange }) => {
+  const { t } = useI18n();
+  const id = `color-${name}`;
+  const own = (value || "").trim();
+  const shown = own || detected || "#000000";
+  return (
+    <div className={`color-field ${own ? "is-overridden" : ""}`}>
+      <input type="color" aria-label={t(`appearance.colors.${name}`)} value={HEX6.test(shown) ? shown : "#000000"} onChange={(e) => onChange(e.target.value)} />
+      <div className="color-field-main">
+        <label htmlFor={id}>{t(`appearance.colors.${name}`)}</label>
+        <div className="row">
+          <input id={id} className="input input-sm mono" value={value || ""} placeholder={detected || ""} onChange={(e) => onChange(e.target.value)} spellCheck={false} />
+          {own ? (
+            <button type="button" className="icon-btn" onClick={() => onChange("")} title={t("appearance.useDetected")} aria-label={t("appearance.useDetected")}>
+              <FiRotateCcw />
+            </button>
+          ) : (
+            <SourceBadge source={source} />
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// The preset made of the detected look (see the API's woo.WordPressThemeID).
+const DETECTED_THEME = "wordpress";
+
+const fromServer = (data) => {
+  const { detected: _detected, ...rest } = data || {};
+  return {
+    ...DEFAULTS,
+    ...rest,
+    colors: { ...(rest.colors || {}) },
+    fonts: { heading: "", body: "", ...(rest.fonts || {}) },
+    banner: { ...DEFAULTS.banner, ...rest.banner },
+    announcement: { ...DEFAULTS.announcement, ...rest.announcement },
+    contact: { ...DEFAULTS.contact, ...rest.contact },
+  };
 };
 
 const NEW_SLIDE = { image: "", mobileImage: "", title: "", subtitle: "", buttonText: "", buttonLink: "/shop", align: "center", overlay: 30, textColor: "#ffffff" };
@@ -116,6 +185,7 @@ const Appearance = () => {
   const { t, errMsg } = useI18n();
   const { setAppearance } = useShop();
   const [a, setA] = useState(null);
+  const [detected, setDetected] = useState(EMPTY_DETECTED);
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
   const { data: themes } = useAsync(async () => asArray((await api.get("/v1/shop/themes")).data), [], []);
@@ -123,7 +193,10 @@ const Appearance = () => {
   useEffect(() => {
     api
       .get("/v1/admin/appearance")
-      .then(({ data }) => setA({ ...DEFAULTS, ...data, banner: { ...DEFAULTS.banner, ...data?.banner }, announcement: { ...DEFAULTS.announcement, ...data?.announcement }, contact: { ...DEFAULTS.contact, ...data?.contact } }))
+      .then(({ data }) => {
+        setDetected({ ...EMPTY_DETECTED, ...data?.detected });
+        setA(fromServer(data));
+      })
       .catch(setError);
   }, []);
 
@@ -138,18 +211,30 @@ const Appearance = () => {
   const setSections = (next) => set("homeSections")(next);
   const setSection = (i, patch) => setSections(sections.map((s, j) => (j === i ? { ...s, ...patch } : s)));
 
-  const pickTheme = (th) => setA((x) => ({ ...x, theme: th.id, colors: { ...x.colors, ...th.colors }, fonts: { ...x.fonts, ...th.fonts } }));
+  // A preset overrides every color and font; the detected one ("wordpress")
+  // clears the overrides so everything is inherited again.
+  const pickTheme = (th) =>
+    setA((x) =>
+      th.id === DETECTED_THEME ? { ...x, theme: "", colors: {}, fonts: { heading: "", body: "" } } : { ...x, theme: th.id, colors: { ...th.colors }, fonts: { ...th.fonts } }
+    );
+  const activeTheme = a.theme || DETECTED_THEME;
+  const view = effective(a, detected);
 
   const save = async (e) => {
     e.preventDefault();
     setBusy(true);
     try {
       const body = { ...a, radius: Number(a.radius || 0), banner: { ...a.banner, intervalSeconds: Number(a.banner.intervalSeconds || 6) } };
+      // Only the overrides are sent and stored (empty = inherited); the
+      // detected values are never written.
       const { data } = await api.put("/v1/admin/appearance", body);
-      const saved = data && typeof data === "object" && data.colors ? data : { ...body, updatedAt: new Date().toISOString() };
-      setA({ ...DEFAULTS, ...saved });
-      setAppearance(saved);
-      applyAppearance(saved);
+      if (data && typeof data === "object") {
+        setA(fromServer(data));
+        if (data.detected) setDetected({ ...EMPTY_DETECTED, ...data.detected });
+      }
+      const { data: served } = await api.get("/v1/shop/appearance");
+      setAppearance(served);
+      applyAppearance(served);
       toast.success(t("admin.saved"));
     } catch (err) {
       toast.error(errMsg(err));
@@ -166,8 +251,8 @@ const Appearance = () => {
           <section className="card stack">
             <h2>{t("appearance.identity")}</h2>
             <div className="form-grid">
-              <TextField label={t("appearance.name")} value={a.name} onChange={set("name")} />
-              <TextField label={t("appearance.tagline")} value={a.tagline} onChange={set("tagline")} />
+              <TextField label={t("appearance.name")} value={a.name} onChange={set("name")} placeholder={detected.name} />
+              <TextField label={t("appearance.tagline")} value={a.tagline} onChange={set("tagline")} placeholder={detected.tagline} />
             </div>
             <ImageInput label={t("appearance.logo")} value={a.logo?.src || ""} onChange={(src) => set("logo")(src ? { id: a.logo?.id || 0, src } : null)} />
             <ImageInput label={t("appearance.favicon")} value={a.favicon} onChange={set("favicon")} />
@@ -175,39 +260,49 @@ const Appearance = () => {
 
           <section className="card stack">
             <h2>{t("appearance.theme")}</h2>
+            <p className="muted small">{t("appearance.inheritHint")}</p>
             <div className="theme-grid" role="radiogroup" aria-label={t("appearance.theme")}>
               {themes.map((th) => (
-                <label key={th.id} className={`theme-swatch ${a.theme === th.id ? "is-active" : ""}`}>
-                  <input type="radio" name="theme" className="sr-only" checked={a.theme === th.id} onChange={() => pickTheme(th)} />
+                <label key={th.id} className={`theme-swatch ${activeTheme === th.id ? "is-active" : ""}`}>
+                  <input type="radio" name="theme" className="sr-only" checked={activeTheme === th.id} onChange={() => pickTheme(th)} />
                   <span className="swatch-colors" aria-hidden="true">
                     {["primary", "secondary", "accent", "background", "text"].map((k) => (
                       <span key={k} style={{ background: th.colors?.[k] }} />
                     ))}
                   </span>
-                  <span>{th.name}</span>
+                  <span>{th.id === DETECTED_THEME ? t("appearance.detectedTheme", { sources: th.name }) : th.name}</span>
                 </label>
               ))}
               {themes.length === 0 && <p className="muted small">{t("appearance.noThemes")}</p>}
             </div>
             <div className="color-grid">
               {COLOR_KEYS.map(([key]) => (
-                <label key={key} className="color-field">
-                  <input type="color" value={a.colors?.[key] || "#000000"} onChange={(e) => setIn("colors", key)(e.target.value)} />
-                  <span>{t(`appearance.colors.${key}`)}</span>
-                  <code className="small">{a.colors?.[key] || "—"}</code>
-                </label>
+                <ColorOverride
+                  key={key}
+                  name={key}
+                  value={a.colors?.[key]}
+                  detected={detected.colors?.[key]}
+                  source={detected.sources?.[`colors.${key}`]}
+                  onChange={setIn("colors", key)}
+                />
               ))}
             </div>
             <div className="form-grid">
               <Field label={t("appearance.headingFont")}>
                 {(id) => (
-                  <>
-                    <input id={id} className="input" list="font-list" value={a.fonts?.heading || ""} onChange={(e) => setIn("fonts", "heading")(e.target.value)} />
-                  </>
+                  <div className="row">
+                    <input id={id} className="input" list="font-list" value={a.fonts?.heading || ""} placeholder={detected.fonts?.heading || ""} onChange={(e) => setIn("fonts", "heading")(e.target.value)} />
+                    {!a.fonts?.heading && <SourceBadge source={detected.sources?.["fonts.heading"]} />}
+                  </div>
                 )}
               </Field>
               <Field label={t("appearance.bodyFont")}>
-                {(id) => <input id={id} className="input" list="font-list" value={a.fonts?.body || ""} onChange={(e) => setIn("fonts", "body")(e.target.value)} />}
+                {(id) => (
+                  <div className="row">
+                    <input id={id} className="input" list="font-list" value={a.fonts?.body || ""} placeholder={detected.fonts?.body || ""} onChange={(e) => setIn("fonts", "body")(e.target.value)} />
+                    {!a.fonts?.body && <SourceBadge source={detected.sources?.["fonts.body"]} />}
+                  </div>
+                )}
               </Field>
               <datalist id="font-list">
                 {FONT_CHOICES.map((f) => (
@@ -330,7 +425,7 @@ const Appearance = () => {
         <aside className="appearance-side">
           <div className="sticky-side stack">
             <h2>{t("appearance.preview")}</h2>
-            <Preview a={a} />
+            <Preview a={view} />
             <button type="submit" className="btn btn-primary btn-block" disabled={busy}>
               {t("common.saveChanges")}
             </button>

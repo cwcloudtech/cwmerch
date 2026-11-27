@@ -1110,6 +1110,16 @@
       "youtube": "YouTube",
       "whatsapp": "Numéro WhatsApp",
       "pinterest": "Pinterest"
+    },
+    "inheritHint": "Les champs vides reprennent la valeur détectée (Divi, puis WooCommerce, puis WordPress, puis le défaut de cwmerch), affichée en gris. Seul ce que vous saisissez est enregistré : la boutique garde son apparence une fois Divi ou WordPress retirés.",
+    "detectedTheme": "Détecté ({{sources}})",
+    "useDetected": "Reprendre la valeur détectée",
+    "source": {
+      "divi": "Divi",
+      "woocommerce": "WooCommerce",
+      "wordpress": "WordPress",
+      "derived": "Contraste",
+      "default": "Défaut"
     }
   },
   "shopClosed": {

@@ -13,16 +13,47 @@ import (
 	"cwmerch-api/internal/php"
 )
 
-// The storefront's default colors come from the active WordPress theme when
-// cwmerch's appearance was never saved, so a shop moving off WordPress keeps
-// its brand: Divi (and Extra / Divi child themes, e.g. divi-cart-pro) theme
-// options, a block theme's global styles, or a classic theme's customizer.
-// Everything is read from wp_options / wp_posts, which always exist; a
-// missing option, an unparsable value or an unknown theme just yields
-// nothing, and cwmerch's own defaults apply.
+// The storefront's look is resolved field by field, the first source that
+// has a value winning:
+//
+//  1. cwmerch's own appearance (cwmerch_settings "appearance": only the fields
+//     the admin overrode; empty = inherit), so the shop keeps working and stays
+//     editable once Divi or WordPress are decommissioned;
+//  2. Divi (and Extra / Divi child themes such as divi-cart-pro): its theme
+//     options (et_divi) and global colors (et_global_data);
+//  3. WooCommerce: its email colors, when changed from WooCommerce's defaults;
+//  4. WordPress: a block theme's global styles, or a classic theme's customizer;
+//  5. cwmerch's default (the blue classic preset).
+//
+// Sources 2-4 are only READ, at request time, and never written back to
+// cwmerch's settings (several API instances may run; nothing to sync). They
+// come from wp_options / wp_posts: a missing option, table or column, or an
+// unparsable value just yields nothing.
 
-// WordPressThemeID is the preset built from the active WordPress theme.
+// WordPressThemeID is the preset made of the detected (inherited) look:
+// choosing it in the editor clears the overrides.
 const WordPressThemeID = "wordpress"
+
+// Look sources.
+const (
+	SourceDivi        = "divi"
+	SourceWooCommerce = "woocommerce"
+	SourceWordPress   = "wordpress"
+	SourceDerived     = "derived" // a readable text color for a detected background
+	SourceDefault     = "default"
+)
+
+// Look is what was detected from Divi, WooCommerce and WordPress, over
+// cwmerch's defaults, with where each value comes from ("colors.primary":
+// "divi"...). The editor shows it as the placeholder of every field the admin
+// didn't override.
+type Look struct {
+	Name    string            `json:"name"`
+	Tagline string            `json:"tagline"`
+	Colors  Colors            `json:"colors"`
+	Fonts   Fonts             `json:"fonts"`
+	Sources map[string]string `json:"sources"`
+}
 
 type themeColors struct {
 	name   string
@@ -32,53 +63,200 @@ type themeColors struct {
 
 func (t *themeColors) empty() bool { return t.colors == (Colors{}) && t.fonts == (Fonts{}) }
 
-// WordPressTheme is the active WordPress theme's look as a preset, merged over
-// cwmerch's default colors (false when nothing usable was found).
-func (s *Store) WordPressTheme(ctx context.Context) (t Theme, ok bool) {
-	// Best effort only: whatever the database holds (another theme, missing
-	// options or tables, odd values), never break the storefront's appearance.
+type colorRef struct {
+	key string
+	p   *string
+}
+
+// colorRefs lists a Colors' fields by JSON key.
+func colorRefs(c *Colors) []colorRef {
+	return []colorRef{{"primary", &c.Primary}, {"primaryText", &c.PrimaryText}, {"secondary", &c.Secondary}, {"accent", &c.Accent},
+		{"background", &c.Background}, {"surface", &c.Surface}, {"text", &c.Text}, {"muted", &c.Muted}, {"border", &c.Border},
+		{"header", &c.Header}, {"headerText", &c.HeaderText}, {"footer", &c.Footer}, {"footerText", &c.FooterText}, {"sale", &c.Sale}}
+}
+
+// textOn pairs a text color with the background it sits on.
+var textOn = [][2]string{{"primaryText", "primary"}, {"headerText", "header"}, {"footerText", "footer"}}
+
+// DetectedLook resolves sources 2-5 (everything but cwmerch's overrides).
+func (s *Store) DetectedLook(ctx context.Context) (look Look) {
+	base := Themes[0]
+	defaultLook := func() Look {
+		l := Look{Colors: base.Colors, Fonts: base.Fonts, Sources: map[string]string{}}
+		for _, r := range colorRefs(&l.Colors) {
+			l.Sources["colors."+r.key] = SourceDefault
+		}
+		l.Sources["fonts.heading"], l.Sources["fonts.body"] = SourceDefault, SourceDefault
+		return l
+	}
+	// Best effort only: whatever the database holds, never break the storefront.
 	defer func() {
 		if r := recover(); r != nil {
-			t, ok = Theme{}, false
+			look = defaultLook()
 		}
 	}()
 	stylesheet := strings.TrimSpace(s.Option(ctx, "stylesheet"))
-	template := strings.TrimSpace(s.Option(ctx, "template"))
-	var found themeColors
-	switch {
-	case isDivi(template) || isDivi(stylesheet):
-		found = s.diviColors(ctx)
-	default:
-		found = s.blockThemeColors(ctx, stylesheet)
-		if found.empty() {
-			found = s.classicThemeColors(ctx, stylesheet)
+	layers := []struct {
+		source string
+		tc     themeColors
+	}{
+		{SourceDivi, s.diviColors(ctx)},
+		{SourceWooCommerce, s.wooColors(ctx)},
+		{SourceWordPress, s.wordPressColors(ctx, stylesheet)},
+	}
+	look = Look{Name: s.Option(ctx, "blogname"), Tagline: s.Option(ctx, "blogdescription"), Sources: map[string]string{}}
+	values := map[string]string{}
+	for _, r := range colorRefs(&look.Colors) {
+		for _, l := range layers {
+			tc := l.tc
+			if v := *colorRefs(&tc.colors)[indexOf(r.key)].p; v != "" {
+				*r.p, look.Sources["colors."+r.key] = v, l.source
+				break
+			}
+		}
+		values[r.key] = *r.p
+	}
+	refs := colorRefs(&look.Colors)
+	for _, pair := range textOn {
+		text, bg := refs[indexOf(pair[0])], refs[indexOf(pair[1])]
+		if *text.p == "" && *bg.p != "" {
+			*text.p, look.Sources["colors."+pair[0]] = readableOn(*bg.p), SourceDerived
 		}
 	}
-	if found.empty() {
-		return Theme{}, false
+	if look.Colors.Accent == "" && look.Colors.Primary != "" {
+		look.Colors.Accent, look.Sources["colors.accent"] = look.Colors.Primary, SourceDerived
 	}
-	name := found.name
-	if name == "" {
-		name = stylesheet
+	def := base.Colors
+	defRefs := colorRefs(&def)
+	for i, r := range refs {
+		if *r.p == "" {
+			*r.p, look.Sources["colors."+r.key] = *defRefs[i].p, SourceDefault
+		}
 	}
-	base := Themes[0]
-	t = Theme{ID: WordPressThemeID, Name: "WordPress (" + name + ")", Colors: mergeColors(base.Colors, found.colors), Fonts: base.Fonts}
-	if found.fonts.Heading != "" {
-		t.Fonts.Heading = found.fonts.Heading
+	look.Fonts, look.Sources["fonts.heading"], look.Sources["fonts.body"] = base.Fonts, SourceDefault, SourceDefault
+	for i := len(layers) - 1; i >= 0; i-- { // first layer wins
+		if f := layers[i].tc.fonts.Heading; f != "" {
+			look.Fonts.Heading, look.Sources["fonts.heading"] = f, layers[i].source
+		}
+		if f := layers[i].tc.fonts.Body; f != "" {
+			look.Fonts.Body, look.Sources["fonts.body"] = f, layers[i].source
+		}
 	}
-	if found.fonts.Body != "" {
-		t.Fonts.Body = found.fonts.Body
-	}
-	return t, true
+	return look
 }
 
-// ThemesFor is the presets offered in the appearance editor: the WordPress
-// theme's first when there is one.
+// inherited reports whether anything came from Divi, WooCommerce or WordPress.
+func (l Look) inherited() bool {
+	for _, src := range l.Sources {
+		if src == SourceDivi || src == SourceWooCommerce || src == SourceWordPress {
+			return true
+		}
+	}
+	return false
+}
+
+// sourceNames lists the sources used, in priority order (for the preset name).
+func (l Look) sourceNames() []string {
+	var out []string
+	for _, s := range []struct{ id, name string }{{SourceDivi, "Divi"}, {SourceWooCommerce, "WooCommerce"}, {SourceWordPress, "WordPress"}} {
+		for _, src := range l.Sources {
+			if src == s.id {
+				out = append(out, s.name)
+				break
+			}
+		}
+	}
+	return out
+}
+
+func indexOf(key string) int {
+	for i, r := range colorRefs(&Colors{}) {
+		if r.key == key {
+			return i
+		}
+	}
+	return -1
+}
+
+// effectiveColors puts the admin's overrides over the detected colors; a
+// background the admin overrode without its text color gets a readable one.
+func effectiveColors(overrides, detected Colors) Colors {
+	out := detected
+	refs, ov := colorRefs(&out), colorRefs(&overrides)
+	for i := range refs {
+		if v := strings.TrimSpace(*ov[i].p); v != "" {
+			*refs[i].p = v
+		}
+	}
+	for _, pair := range textOn {
+		if *ov[indexOf(pair[0])].p == "" && *ov[indexOf(pair[1])].p != "" {
+			*refs[indexOf(pair[0])].p = readableOn(*refs[indexOf(pair[1])].p)
+		}
+	}
+	return out
+}
+
+func effectiveFonts(overrides, detected Fonts) Fonts {
+	out := detected
+	if v := strings.TrimSpace(overrides.Heading); v != "" {
+		out.Heading = v
+	}
+	if v := strings.TrimSpace(overrides.Body); v != "" {
+		out.Body = v
+	}
+	return out
+}
+
+// WordPressTheme is the detected look as a preset (false when nothing came
+// from Divi, WooCommerce or WordPress).
+func (s *Store) WordPressTheme(ctx context.Context) (Theme, bool) {
+	look := s.DetectedLook(ctx)
+	if !look.inherited() {
+		return Theme{}, false
+	}
+	return Theme{ID: WordPressThemeID, Name: strings.Join(look.sourceNames(), " + "), Colors: look.Colors, Fonts: look.Fonts}, true
+}
+
+// ThemesFor is the presets offered in the appearance editor: the detected
+// look first when there is one.
 func (s *Store) ThemesFor(ctx context.Context) []Theme {
 	if t, ok := s.WordPressTheme(ctx); ok {
 		return append([]Theme{t}, Themes...)
 	}
 	return Themes
+}
+
+// wooColors reads WooCommerce's email colors, ignoring WooCommerce's own
+// defaults (they say nothing about the shop's brand).
+func (s *Store) wooColors(ctx context.Context) themeColors {
+	out := themeColors{name: "WooCommerce"}
+	opt := func(name string, defaults ...string) string {
+		v := normColor(s.Option(ctx, name))
+		for _, d := range defaults {
+			if v == d {
+				return ""
+			}
+		}
+		return v
+	}
+	out.colors.Primary = opt("woocommerce_email_base_color", "#7f54b3", "#720eec", "#96588a")
+	out.colors.Text = opt("woocommerce_email_text_color", "#3c3c3c", "#1e1e1e", "#515151")
+	return out
+}
+
+// wordPressColors reads the theme: a block theme's global styles, else a
+// classic theme's customizer.
+func (s *Store) wordPressColors(ctx context.Context, stylesheet string) themeColors {
+	if isDivi(stylesheet) || isDivi(s.Option(ctx, "template")) {
+		return themeColors{} // Divi's colors are read from its own options
+	}
+	if tc := s.blockThemeColors(ctx, stylesheet); !tc.empty() {
+		tc.name = stylesheet
+		return tc
+	}
+	tc := s.classicThemeColors(ctx, stylesheet)
+	tc.name = stylesheet
+	return tc
 }
 
 func isDivi(name string) bool {
@@ -87,7 +265,8 @@ func isDivi(name string) bool {
 }
 
 // diviColors reads Divi's theme options (the et_divi option, serialized) and,
-// as a fallback, its global colors (et_global_data).
+// as a fallback, its global colors (et_global_data); whenever they exist,
+// even once Divi is no longer the active theme.
 func (s *Store) diviColors(ctx context.Context) themeColors {
 	out := themeColors{name: "Divi"}
 	opts := php.UnmarshalArray(s.Option(ctx, "et_divi"))
@@ -231,43 +410,6 @@ func (s *Store) classicThemeColors(ctx context.Context, stylesheet string) theme
 	out.colors.Background = hex("background_color")
 	out.colors.Primary = firstNonEmpty(hex("primary_color"), hex("accent_color"), hex("link_color"))
 	out.colors.HeaderText = hex("header_textcolor")
-	return out
-}
-
-// mergeColors puts the theme's colors over the defaults and picks readable
-// text colors for the backgrounds the theme set without their text color.
-func mergeColors(base, theme Colors) Colors {
-	out := base
-	set := func(dst *string, v string) {
-		if v != "" {
-			*dst = v
-		}
-	}
-	set(&out.Primary, theme.Primary)
-	set(&out.Secondary, theme.Secondary)
-	set(&out.Accent, theme.Accent)
-	set(&out.Background, theme.Background)
-	set(&out.Surface, theme.Surface)
-	set(&out.Text, theme.Text)
-	set(&out.Muted, theme.Muted)
-	set(&out.Border, theme.Border)
-	set(&out.Header, theme.Header)
-	set(&out.Footer, theme.Footer)
-	set(&out.Sale, theme.Sale)
-	out.PrimaryText = firstNonEmpty(theme.PrimaryText, readableOn(out.Primary))
-	if theme.Header != "" && theme.HeaderText == "" {
-		out.HeaderText = readableOn(out.Header)
-	} else {
-		set(&out.HeaderText, theme.HeaderText)
-	}
-	if theme.Footer != "" && theme.FooterText == "" {
-		out.FooterText = readableOn(out.Footer)
-	} else {
-		set(&out.FooterText, theme.FooterText)
-	}
-	if theme.Accent == "" && theme.Primary != "" {
-		out.Accent = theme.Primary
-	}
 	return out
 }
 

@@ -30,10 +30,14 @@ func TestReadableOn(t *testing.T) {
 	}
 }
 
-func TestMergeColors(t *testing.T) {
-	base := Themes[0].Colors
-	got := mergeColors(base, Colors{Primary: "#e384aa", Footer: "#222222"})
-	if got.Primary != "#e384aa" || got.Accent != "#e384aa" || got.PrimaryText != "#0f172a" || got.FooterText != "#ffffff" || got.Background != base.Background {
-		t.Fatalf("unexpected merge: %+v", got)
+func TestEffectiveColors(t *testing.T) {
+	detected := Themes[0].Colors
+	detected.Primary, detected.Footer = "#e384aa", "#222222"
+	got := effectiveColors(Colors{Footer: "#ffffff", Text: " #111111 "}, detected)
+	if got.Primary != "#e384aa" || got.Footer != "#ffffff" || got.FooterText != "#0f172a" || got.Text != "#111111" || got.Background != detected.Background {
+		t.Fatalf("unexpected colors: %+v", got)
+	}
+	if f := effectiveFonts(Fonts{Body: "Lato"}, Fonts{Heading: "Inter", Body: "Inter"}); f.Heading != "Inter" || f.Body != "Lato" {
+		t.Fatalf("unexpected fonts: %+v", f)
 	}
 }

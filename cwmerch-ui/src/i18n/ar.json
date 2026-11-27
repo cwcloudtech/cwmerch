@@ -1110,6 +1110,16 @@
       "youtube": "YouTube",
       "whatsapp": "رقم WhatsApp",
       "pinterest": "Pinterest"
+    },
+    "inheritHint": "الحقول الفارغة تأخذ القيمة المكتشفة (Divi ثم WooCommerce ثم WordPress ثم القيمة الافتراضية لـ cwmerch) والمعروضة باللون الرمادي. يُحفظ فقط ما تُدخله، فيحتفظ المتجر بمظهره بعد إزالة Divi أو WordPress.",
+    "detectedTheme": "مُكتشَف ({{sources}})",
+    "useDetected": "استخدام القيمة المكتشفة",
+    "source": {
+      "divi": "Divi",
+      "woocommerce": "WooCommerce",
+      "wordpress": "WordPress",
+      "derived": "تباين",
+      "default": "افتراضي"
     }
   },
   "shopClosed": {

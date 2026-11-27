@@ -826,7 +826,7 @@ func (h *ShopAdminHandler) UpdateEmail(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *ShopAdminHandler) Appearance(w http.ResponseWriter, r *http.Request) {
-	a, err := h.woo.Appearance(r.Context(), true)
+	a, err := h.woo.AdminAppearance(r.Context())
 	if err != nil {
 		writeWooError(w, err)
 		return

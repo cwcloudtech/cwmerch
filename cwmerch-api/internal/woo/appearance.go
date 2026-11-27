@@ -168,33 +168,48 @@ func (s *Store) SaveSetting(ctx context.Context, name string, v any, by uint64) 
 	return err
 }
 
-// Appearance reads the storefront appearance (defaults filled in; the shop
-// name falls back to WordPress' blogname).
-func (s *Store) Appearance(ctx context.Context, withCSS bool) (Appearance, error) {
+// storedAppearance is cwmerch's own appearance document: colors and fonts
+// hold only the admin's overrides (empty = inherit from the detected look).
+func (s *Store) storedAppearance(ctx context.Context) (Appearance, bool, error) {
 	a := defaultAppearance()
+	a.Theme, a.Colors, a.Fonts = "", Colors{}, Fonts{}
 	at, saved, err := s.Setting(ctx, "appearance", &a)
 	if err != nil {
-		return Appearance{}, err
-	}
-	// Never saved: the active WordPress theme's colors (Divi, block or classic
-	// theme) before cwmerch's defaults.
-	if !saved {
-		if t, ok := s.WordPressTheme(ctx); ok {
-			a.Theme, a.Colors, a.Fonts = t.ID, t.Colors, t.Fonts
-		}
+		return Appearance{}, false, err
 	}
 	a.UpdatedAt = at
-	if a.Name == "" {
-		a.Name = s.Option(ctx, "blogname")
-	}
-	if a.Tagline == "" {
-		a.Tagline = s.Option(ctx, "blogdescription")
-	}
 	if a.Banner.Slides == nil {
 		a.Banner.Slides = []Slide{}
 	}
 	if a.HomeSections == nil {
 		a.HomeSections = []HomeSection{}
+	}
+	return a, saved, nil
+}
+
+// Appearance is the storefront appearance as served: each color and font is
+// the admin's override, else Divi's, WooCommerce's, WordPress', else
+// cwmerch's default (see DetectedLook); the shop name and tagline fall back to
+// WordPress' blogname / blogdescription.
+func (s *Store) Appearance(ctx context.Context, withCSS bool) (Appearance, error) {
+	a, _, err := s.storedAppearance(ctx)
+	if err != nil {
+		return Appearance{}, err
+	}
+	look := s.DetectedLook(ctx)
+	a.Colors = effectiveColors(a.Colors, look.Colors)
+	a.Fonts = effectiveFonts(a.Fonts, look.Fonts)
+	if a.Theme == "" {
+		a.Theme = Themes[0].ID
+		if look.inherited() {
+			a.Theme = WordPressThemeID
+		}
+	}
+	if a.Name == "" {
+		a.Name = look.Name
+	}
+	if a.Tagline == "" {
+		a.Tagline = look.Tagline
 	}
 	if !withCSS {
 		a.CustomCSS = ""
@@ -202,23 +217,41 @@ func (s *Store) Appearance(ctx context.Context, withCSS bool) (Appearance, error
 	return a, nil
 }
 
+// AdminAppearance is what the appearance editor edits: the admin's overrides
+// (empty colors/fonts/name = inherited) and the detected look, shown as the
+// placeholders of the fields left empty.
+type AdminAppearance struct {
+	Appearance
+	Detected Look `json:"detected"`
+}
+
+// AdminAppearance reads the overrides and the detected look. Nothing detected
+// is ever written to cwmerch's settings.
+func (s *Store) AdminAppearance(ctx context.Context) (AdminAppearance, error) {
+	a, _, err := s.storedAppearance(ctx)
+	if err != nil {
+		return AdminAppearance{}, err
+	}
+	return AdminAppearance{Appearance: a, Detected: s.DetectedLook(ctx)}, nil
+}
+
 var cssColor = regexp.MustCompile(`^(#[0-9a-fA-F]{3,8}|rgba?\([0-9.,\s%]+\)|hsla?\([0-9.,\s%deg]+\)|[a-zA-Z]+)$`)
 var fontName = regexp.MustCompile(`^[A-Za-z0-9 \-]{0,60}$`)
 
-// SaveAppearance validates and writes the appearance; the shop name also
-// goes to WordPress' blogname so both stay in step.
-func (s *Store) SaveAppearance(ctx context.Context, a Appearance, by uint64) (Appearance, error) {
+// SaveAppearance validates and writes the admin's overrides; the shop name
+// also goes to WordPress' blogname so both stay in step.
+func (s *Store) SaveAppearance(ctx context.Context, a Appearance, by uint64) (AdminAppearance, error) {
 	if err := validColors(a.Colors); err != nil {
-		return Appearance{}, err
+		return AdminAppearance{}, err
 	}
 	if !fontName.MatchString(a.Fonts.Heading) || !fontName.MatchString(a.Fonts.Body) {
-		return Appearance{}, refuse(400, "errors.invalidFont", "Invalid font name")
+		return AdminAppearance{}, refuse(400, "errors.invalidFont", "Invalid font name")
 	}
 	if strings.Contains(strings.ToLower(a.CustomCSS), "</style") {
-		return Appearance{}, refuse(400, "errors.invalidCss", "Custom CSS cannot contain </style>")
+		return AdminAppearance{}, refuse(400, "errors.invalidCss", "Custom CSS cannot contain </style>")
 	}
 	if len(a.CustomCSS) > 100_000 {
-		return Appearance{}, refuse(400, "errors.cssTooLarge", "Custom CSS is too large")
+		return AdminAppearance{}, refuse(400, "errors.cssTooLarge", "Custom CSS is too large")
 	}
 	if a.Radius < 0 || a.Radius > 40 {
 		a.Radius = 8
@@ -231,9 +264,18 @@ func (s *Store) SaveAppearance(ctx context.Context, a Appearance, by uint64) (Ap
 	if a.Banner.IntervalSeconds < 2 {
 		a.Banner.IntervalSeconds = 6
 	}
+	// Only the overrides are stored (empty = inherit); choosing the detected
+	// preset clears them.
+	if a.Theme == WordPressThemeID {
+		a.Theme = ""
+	}
+	for _, r := range colorRefs(&a.Colors) {
+		*r.p = strings.TrimSpace(*r.p)
+	}
+	a.Fonts.Heading, a.Fonts.Body = strings.TrimSpace(a.Fonts.Heading), strings.TrimSpace(a.Fonts.Body)
 	a.UpdatedAt = time.Time{}
 	if err := s.SaveSetting(ctx, "appearance", a, by); err != nil {
-		return Appearance{}, err
+		return AdminAppearance{}, err
 	}
 	if strings.TrimSpace(a.Name) != "" {
 		_ = s.SetOption(ctx, "blogname", a.Name)
@@ -241,7 +283,7 @@ func (s *Store) SaveAppearance(ctx context.Context, a Appearance, by uint64) (Ap
 	if a.Tagline != "" {
 		_ = s.SetOption(ctx, "blogdescription", a.Tagline)
 	}
-	return s.Appearance(ctx, true)
+	return s.AdminAppearance(ctx)
 }
 
 func validColors(c Colors) error {

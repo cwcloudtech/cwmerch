@@ -1110,6 +1110,16 @@
       "youtube": "YouTube",
       "whatsapp": "WhatsApp number",
       "pinterest": "Pinterest"
+    },
+    "inheritHint": "Empty fields inherit the detected value (Divi, then WooCommerce, then WordPress, then the cwmerch default), shown in grey. Only what you fill in is saved, so the shop keeps its look once Divi or WordPress are gone.",
+    "detectedTheme": "Detected ({{sources}})",
+    "useDetected": "Use the detected value",
+    "source": {
+      "divi": "Divi",
+      "woocommerce": "WooCommerce",
+      "wordpress": "WordPress",
+      "derived": "Contrast",
+      "default": "Default"
     }
   },
   "shopClosed": {

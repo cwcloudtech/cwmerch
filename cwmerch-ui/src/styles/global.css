@@ -3174,3 +3174,60 @@ pre {
 .text-danger {
   color: var(--c-danger);
 }
+
+/* appearance editor: overrides over the detected look */
+.color-field {
+  align-items: flex-start;
+  cursor: default;
+}
+.color-field-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+.color-field-main label {
+  font-size: 0.85rem;
+}
+.color-field-main .row {
+  gap: 6px;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+.color-field-main .input {
+  width: 100%;
+  min-width: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+}
+.color-field.is-overridden input[type="color"] {
+  outline: 2px solid var(--c-primary);
+  outline-offset: 1px;
+}
+.source-badge {
+  flex: none;
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--c-muted) 14%, transparent);
+  color: var(--c-muted);
+  white-space: nowrap;
+}
+.source-badge.source-divi {
+  background: color-mix(in srgb, #7e3bd0 14%, transparent);
+  color: color-mix(in srgb, #7e3bd0 65%, var(--c-text));
+}
+.source-badge.source-woocommerce {
+  background: color-mix(in srgb, #720eec 12%, transparent);
+  color: color-mix(in srgb, #5b0bbd 65%, var(--c-text));
+}
+.source-badge.source-wordpress {
+  background: color-mix(in srgb, #2271b1 14%, transparent);
+  color: color-mix(in srgb, #1b5b8e 65%, var(--c-text));
+}
+.color-grid {
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
