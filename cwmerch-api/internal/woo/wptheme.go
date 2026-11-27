@@ -50,6 +50,7 @@ const (
 type Look struct {
 	Name    string            `json:"name"`
 	Tagline string            `json:"tagline"`
+	Logo    *Image            `json:"logo"`
 	Colors  Colors            `json:"colors"`
 	Fonts   Fonts             `json:"fonts"`
 	Sources map[string]string `json:"sources"`
@@ -134,6 +135,9 @@ func (s *Store) DetectedLook(ctx context.Context) (look Look) {
 		}
 	}
 	look.Fonts, look.Sources["fonts.heading"], look.Sources["fonts.body"] = base.Fonts, SourceDefault, SourceDefault
+	if logo, src := s.detectedLogo(ctx, stylesheet); logo != nil {
+		look.Logo, look.Sources["logo"] = logo, src
+	}
 	for i := len(layers) - 1; i >= 0; i-- { // first layer wins
 		if f := layers[i].tc.fonts.Heading; f != "" {
 			look.Fonts.Heading, look.Sources["fonts.heading"] = f, layers[i].source
@@ -224,6 +228,49 @@ func (s *Store) ThemesFor(ctx context.Context) []Theme {
 		return append([]Theme{t}, Themes...)
 	}
 	return Themes
+}
+
+// detectedLogo is the shop's logo from Divi (divi_logo, not Divi's own
+// default), WooCommerce (the email header image), or WordPress (the theme's
+// custom_logo, or a block theme's site_logo), in that order. Only an https://
+// URL is kept: a plain-http one would be blocked as mixed content.
+func (s *Store) detectedLogo(ctx context.Context, stylesheet string) (*Image, string) {
+	secure := func(u string) string {
+		u = strings.TrimSpace(u)
+		if strings.HasPrefix(strings.ToLower(u), "https://") && !strings.ContainsAny(u, " \t\n\"'<>") {
+			return u
+		}
+		return ""
+	}
+	if opts := php.UnmarshalArray(s.Option(ctx, "et_divi")); opts != nil {
+		if u := secure(opts.String("divi_logo")); u != "" && !strings.Contains(strings.ToLower(u), "/themes/divi/images/logo.png") {
+			return &Image{Src: u}, SourceDivi
+		}
+	}
+	if u := secure(s.Option(ctx, "woocommerce_email_header_image")); u != "" {
+		return &Image{Src: u}, SourceWooCommerce
+	}
+	var ids []uint64
+	if stylesheet != "" {
+		if mods := php.UnmarshalArray(s.Option(ctx, "theme_mods_"+stylesheet)); mods != nil {
+			if id := ParseID(mods.String("custom_logo")); id != 0 {
+				ids = append(ids, id)
+			}
+		}
+	}
+	if id := ParseID(s.Option(ctx, "site_logo")); id != 0 {
+		ids = append(ids, id)
+	}
+	if len(ids) > 0 {
+		if imgs, err := s.images(ctx, ids); err == nil {
+			for _, id := range ids {
+				if img, ok := imgs[id]; ok && secure(img.Src) != "" {
+					return &img, SourceWordPress
+				}
+			}
+		}
+	}
+	return nil, ""
 }
 
 // wooColors reads WooCommerce's email colors, ignoring WooCommerce's own

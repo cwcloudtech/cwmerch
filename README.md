@@ -78,6 +78,8 @@ Plus:
   or classic theme customizer), else the blue classic theme. The editor shows every inherited value as the
   placeholder of its field, with its source; only the overrides are saved (nothing detected is ever written,
   so several API instances never race), so the shop stays editable once Divi or WordPress are decommissioned.
+  The **logo** follows the same order (Divi's `divi_logo`, WooCommerce's email header image, WordPress'
+  `custom_logo` / `site_logo`), and only an `https://` URL is taken.
   Read best-effort: missing options, tables or columns are ignored.
 * **Forgotten password** and **contact form** (CWCloud `contactreq`).
 * **Languages**: English, French and **Arabic** (right-to-left layout) for the storefront, the customer

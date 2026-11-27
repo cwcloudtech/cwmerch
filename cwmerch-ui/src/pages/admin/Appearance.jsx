@@ -46,6 +46,7 @@ const effective = (a, d) => {
     ...a,
     name: a.name || d.name,
     tagline: a.tagline || d.tagline,
+    logo: a.logo?.src ? a.logo : d.logo || null,
     colors,
     fonts: { heading: a.fonts?.heading || d.fonts?.heading || "", body: a.fonts?.body || d.fonts?.body || "" },
   };
@@ -111,14 +112,24 @@ const move = (list, i, d) => {
   return next;
 };
 
-const ImageInput = ({ label, value, onChange }) => {
+// ImageInput edits an image URL; empty = the detected one (shown faded, as
+// the placeholder, with its source) when there is one.
+const ImageInput = ({ label, value, onChange, detected, source }) => {
   const { t, errMsg } = useI18n();
+  const inherited = !value && detected;
   return (
     <Field label={label}>
       {(id) => (
         <div className="row wrap">
-          {value ? <img src={value} alt="" className="thumb-md" /> : <span className="img-placeholder thumb-md" />}
-          <input id={id} className="input grow" type="url" value={value || ""} onChange={(e) => onChange(e.target.value)} placeholder="https://..." />
+          {value ? (
+            <img src={value} alt="" className="thumb-md" />
+          ) : inherited ? (
+            <img src={detected} alt="" className="thumb-md is-inherited" />
+          ) : (
+            <span className="img-placeholder thumb-md" />
+          )}
+          <input id={id} className="input grow" type="url" value={value || ""} onChange={(e) => onChange(e.target.value)} placeholder={detected || "https://..."} />
+          {inherited && <SourceBadge source={source} />}
           <UploadButton
             label={t("admin.products.uploadImage")}
             onFiles={async ([f]) => {
@@ -254,7 +265,13 @@ const Appearance = () => {
               <TextField label={t("appearance.name")} value={a.name} onChange={set("name")} placeholder={detected.name} />
               <TextField label={t("appearance.tagline")} value={a.tagline} onChange={set("tagline")} placeholder={detected.tagline} />
             </div>
-            <ImageInput label={t("appearance.logo")} value={a.logo?.src || ""} onChange={(src) => set("logo")(src ? { id: a.logo?.id || 0, src } : null)} />
+            <ImageInput
+              label={t("appearance.logo")}
+              value={a.logo?.src || ""}
+              onChange={(src) => set("logo")(src ? { id: a.logo?.id || 0, src } : null)}
+              detected={detected.logo?.src}
+              source={detected.sources?.logo}
+            />
             <ImageInput label={t("appearance.favicon")} value={a.favicon} onChange={set("favicon")} />
           </section>
 

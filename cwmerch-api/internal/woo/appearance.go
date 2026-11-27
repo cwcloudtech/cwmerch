@@ -205,6 +205,9 @@ func (s *Store) Appearance(ctx context.Context, withCSS bool) (Appearance, error
 			a.Theme = WordPressThemeID
 		}
 	}
+	if a.Logo == nil || strings.TrimSpace(a.Logo.Src) == "" {
+		a.Logo = look.Logo
+	}
 	if a.Name == "" {
 		a.Name = look.Name
 	}

@@ -3231,3 +3231,8 @@ pre {
 .color-grid {
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
 }
+.thumb-md.is-inherited {
+  opacity: 0.6;
+  outline: 1px dashed var(--c-border);
+  outline-offset: 2px;
+}
