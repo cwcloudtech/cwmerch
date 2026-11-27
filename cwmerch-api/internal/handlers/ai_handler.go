@@ -789,6 +789,8 @@ func languageName(locale string) string {
 	switch normalizeLocale(locale) {
 	case "fr":
 		return "French"
+	case "ar":
+		return "Arabic"
 	case "en":
 		return "English"
 	}

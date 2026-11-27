@@ -119,7 +119,7 @@ export const AddressView = ({ address }) => {
           <br />
         </span>
       )}
-      {a.phone && <span>{a.phone}</span>}
+      {a.phone && <span dir="ltr">{a.phone}</span>}
     </address>
   );
 };

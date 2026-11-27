@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { api, asArray, SHOP_DISABLED_EVENT } from "../api/client";
 import { formatMoney } from "../lib/money";
 import { applyAppearance } from "../lib/appearance";
+import { useI18n } from "../i18n/I18nContext";
 
 const DEFAULT_SETTINGS = {
   name: "cwmerch",
@@ -31,6 +32,7 @@ const DEFAULT_SETTINGS = {
 const ShopContext = createContext(null);
 
 export const ShopProvider = ({ children }) => {
+  const { configureLanguages } = useI18n();
   const [settings, setSettings] = useState(DEFAULT_SETTINGS);
   const [loaded, setLoaded] = useState(false);
   const [categories, setCategories] = useState([]);
@@ -60,11 +62,15 @@ export const ShopProvider = ({ children }) => {
     } else {
       applyAppearance(null);
     }
-    if (s.status === "fulfilled") setSettings({ ...DEFAULT_SETTINGS, ...s.value.data });
+    if (s.status === "fulfilled") {
+      setSettings({ ...DEFAULT_SETTINGS, ...s.value.data });
+      // Enabled UI languages + default come with the public settings.
+      configureLanguages({ languages: s.value.data?.languages, defaultLanguage: s.value.data?.defaultLanguage });
+    }
     if (c.status === "fulfilled") setCategories(asArray(c.value.data));
     if (k.status === "fulfilled") setCountries(asArray(k.value.data));
     setLoaded(true);
-  }, []);
+  }, [configureLanguages]);
 
   useEffect(() => {
     reload();

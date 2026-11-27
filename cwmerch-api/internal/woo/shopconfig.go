@@ -1,24 +1,78 @@
 package woo
 
-import "context"
+import (
+	"context"
+	"strings"
+)
 
-// ShopConfig switches the public shop: cwmerch can run as an internal
-// information system only (back office, accounting, AI) with no storefront.
+// Languages the storefront, account, back office and emails are available in.
+// PDF exports (invoices, accounting) stay in English or French.
+var SupportedLanguages = []string{"en", "fr", "ar"}
+
+// ShopConfig switches the public shop (cwmerch can run as an internal
+// information system only: back office, accounting, AI, no storefront) and
+// lists the languages the shop offers.
 type ShopConfig struct {
-	ShopEnabled         bool   `json:"shopEnabled"`
-	ClosedMessage       string `json:"closedMessage"`
-	RegistrationEnabled bool   `json:"registrationEnabled"`
+	ShopEnabled         bool     `json:"shopEnabled"`
+	ClosedMessage       string   `json:"closedMessage"`
+	RegistrationEnabled bool     `json:"registrationEnabled"`
+	Languages           []string `json:"languages"`
+	DefaultLanguage     string   `json:"defaultLanguage"`
 }
 
-// ShopConfig reads the switch (open by default).
+func supportedLanguage(l string) bool {
+	for _, s := range SupportedLanguages {
+		if s == l {
+			return true
+		}
+	}
+	return false
+}
+
+// ShopConfig reads the switch (open, every language, by default).
 func (s *Store) ShopConfig(ctx context.Context) ShopConfig {
 	c := ShopConfig{ShopEnabled: true, RegistrationEnabled: true}
 	_, _, _ = s.Setting(ctx, "shop", &c)
+	if len(c.Languages) == 0 {
+		c.Languages = append([]string{}, SupportedLanguages...)
+	}
+	if c.DefaultLanguage == "" || !contains(strings.Join(c.Languages, ","), c.DefaultLanguage) {
+		c.DefaultLanguage = c.Languages[0]
+		if wp := strings.ToLower(s.Option(ctx, "WPLANG")); wp != "" {
+			for _, l := range c.Languages {
+				if strings.HasPrefix(wp, l) {
+					c.DefaultLanguage = l
+				}
+			}
+		}
+	}
 	return c
 }
 
-// SaveShopConfig writes the switch.
+// SaveShopConfig validates and writes the switch and the languages.
 func (s *Store) SaveShopConfig(ctx context.Context, c ShopConfig, by uint64) (ShopConfig, error) {
+	seen := map[string]bool{}
+	langs := []string{}
+	for _, l := range c.Languages {
+		l = strings.ToLower(strings.TrimSpace(l))
+		if !supportedLanguage(l) {
+			return ShopConfig{}, refuse(400, "errors.unsupportedLanguage", "Unsupported language: "+l)
+		}
+		if !seen[l] {
+			seen[l] = true
+			langs = append(langs, l)
+		}
+	}
+	if len(langs) == 0 {
+		return ShopConfig{}, refuse(400, "errors.languageRequired", "At least one language must be enabled")
+	}
+	c.Languages = langs
+	if c.DefaultLanguage == "" {
+		c.DefaultLanguage = langs[0]
+	}
+	if !seen[c.DefaultLanguage] {
+		return ShopConfig{}, refuse(400, "errors.invalidDefaultLanguage", "The default language must be one of the enabled languages")
+	}
 	if err := s.SaveSetting(ctx, "shop", c, by); err != nil {
 		return ShopConfig{}, err
 	}

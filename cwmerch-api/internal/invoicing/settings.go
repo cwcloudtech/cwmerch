@@ -175,6 +175,10 @@ func (s *Service) SaveSettings(ctx context.Context, set Settings, by uint64) (Se
 	if set.StampAmount < 0 || set.DefaultVatRate < 0 || set.DefaultVatRate > 100 {
 		return Settings{}, &woo.Error{Status: 400, Code: "errors.invalidInvoiceAmounts", Message: "Invalid VAT rate or stamp amount"}
 	}
+	// PDF exports are never Arabic: an Arabic-speaking shop gets English invoices.
+	if set.Locale != "fr" {
+		set.Locale = "en"
+	}
 	if set.NumberPadding < 1 || set.NumberPadding > 10 {
 		set.NumberPadding = 5
 	}
@@ -252,6 +256,9 @@ func (s *Service) SaveCountryDefault(ctx context.Context, iso string, row Countr
 	}
 	if row.TaxMode == "" {
 		row.TaxMode = TaxVAT
+	}
+	if row.Locale != "fr" {
+		row.Locale = "en" // invoices are in English or French, never Arabic
 	}
 	if !validTaxMode(row.TaxMode) {
 		return CountryDefaults{}, &woo.Error{Status: 400, Code: "errors.invalidTaxMode", Message: "Tax mode must be vat, stamp, vat_stamp or none"}

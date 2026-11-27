@@ -1,34 +1,86 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 import en from "./en.json";
 import fr from "./fr.json";
+import ar from "./ar.json";
 
-export const dictionaries = { en, fr };
+export const dictionaries = { en, fr, ar };
 export const LANGUAGES = [
   { code: "en", label: "English" },
   { code: "fr", label: "Français" },
+  { code: "ar", label: "العربية" },
 ];
+const RTL_LOCALES = new Set(["ar"]);
+export const isRtl = (locale) => RTL_LOCALES.has(locale);
+export const dirFor = (locale) => (isRtl(locale) ? "rtl" : "ltr");
+
 const STORAGE_KEY = "cwmerch.locale";
+// The shop's language config ({languages, defaultLanguage}) is cached so the
+// next visit resolves the right language before /v1/shop/settings answers.
+const CONFIG_KEY = "cwmerch.languages";
+const ARABIC_FONT_HREF = "https://fonts.googleapis.com/css2?family=Noto+Sans+Arabic:wght@400;600;700&display=swap";
 
-const resolve = (dict, key) =>
-  key.split(".").reduce((acc, part) => (acc && acc[part] !== undefined ? acc[part] : undefined), dict);
-
-const initialLocale = () => {
+const readStorage = (key) => {
   try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored && dictionaries[stored]) return stored;
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+};
+const writeStorage = (key, value) => {
+  try {
+    localStorage.setItem(key, value);
   } catch {
     /* storage unavailable */
   }
-  const browser = (typeof navigator !== "undefined" && (navigator.language || "en")).slice(0, 2).toLowerCase();
-  return dictionaries[browser] ? browser : "en";
 };
+
+// normalizeConfig keeps only known languages (at least one) and a default
+// that is among them.
+export const normalizeConfig = (cfg) => {
+  const known = LANGUAGES.map((l) => l.code);
+  let languages = Array.isArray(cfg?.languages) ? known.filter((c) => cfg.languages.includes(c)) : [];
+  if (languages.length === 0) languages = known;
+  const defaultLanguage = languages.includes(cfg?.defaultLanguage) ? cfg.defaultLanguage : languages.includes("en") ? "en" : languages[0];
+  return { languages, defaultLanguage };
+};
+
+const cachedConfig = () => {
+  try {
+    return normalizeConfig(JSON.parse(readStorage(CONFIG_KEY) || "null"));
+  } catch {
+    return normalizeConfig(null);
+  }
+};
+
+const browserLanguages = () => {
+  if (typeof navigator === "undefined") return [];
+  const list = navigator.languages && navigator.languages.length ? navigator.languages : [navigator.language || ""];
+  return list.map((l) => String(l || "").slice(0, 2).toLowerCase());
+};
+
+// pickLocale: a stored choice wins when still enabled (else the shop default);
+// without one, the first enabled browser language, else the shop default.
+const pickLocale = (cfg, current) => {
+  const stored = readStorage(STORAGE_KEY);
+  if (stored && dictionaries[stored]) return cfg.languages.includes(stored) ? stored : cfg.defaultLanguage;
+  if (current && cfg.languages.includes(current)) return current;
+  const browser = browserLanguages().find((l) => cfg.languages.includes(l));
+  return browser || cfg.defaultLanguage;
+};
+
+const resolve = (dict, key) =>
+  key.split(".").reduce((acc, part) => (acc && acc[part] !== undefined ? acc[part] : undefined), dict);
 
 export const translate = (locale, key, vars) => {
   let str = resolve(dictionaries[locale], key) ?? resolve(dictionaries.en, key);
   if (typeof str !== "string") str = key;
   if (vars) {
+    // In right-to-left text each value is bidi-isolated (FSI…PDI) so phone
+    // numbers, e-mails, Latin names and amounts keep their own order.
+    const rtl = isRtl(locale);
     Object.keys(vars).forEach((k) => {
-      str = str.split(`{{${k}}}`).join(vars[k] ?? "");
+      const v = vars[k] ?? "";
+      str = str.split(`{{${k}}}`).join(rtl && v !== "" ? `\u2068${v}\u2069` : v);
     });
   }
   return str;
@@ -53,45 +105,77 @@ export const errorMessage = (error, locale) => {
   return translate(locale, "errors.generic");
 };
 
+// intlLocale: the BCP 47 tag for Intl date formatting. Arabic keeps Western
+// digits so dates read consistently with the shop's money format.
+const intlLocale = (locale) => (locale === "ar" ? "ar-u-nu-latn" : locale);
+
+const loadArabicFont = () => {
+  const id = "cwmerch-arabic-font";
+  if (document.getElementById(id)) return;
+  const link = document.createElement("link");
+  link.id = id;
+  link.rel = "stylesheet";
+  link.href = ARABIC_FONT_HREF;
+  document.head.appendChild(link);
+};
+
 const I18nContext = createContext(null);
 
 export const I18nProvider = ({ children }) => {
-  const [locale, setLocaleState] = useState(initialLocale);
+  const [config, setConfig] = useState(cachedConfig);
+  const [locale, setLocaleState] = useState(() => pickLocale(cachedConfig(), null));
 
   useEffect(() => {
-    document.documentElement.lang = locale;
+    const root = document.documentElement;
+    root.lang = locale;
+    root.dir = dirFor(locale);
+    if (locale === "ar") loadArabicFont();
   }, [locale]);
 
-  const setLocale = useCallback((next) => {
-    if (!dictionaries[next]) return;
-    setLocaleState(next);
-    try {
-      localStorage.setItem(STORAGE_KEY, next);
-    } catch {
-      /* storage unavailable */
-    }
+  const setLocale = useCallback(
+    (next) => {
+      if (!dictionaries[next] || !config.languages.includes(next)) return;
+      setLocaleState(next);
+      writeStorage(STORAGE_KEY, next);
+    },
+    [config]
+  );
+
+  // configureLanguages applies the shop's enabled languages + default (from
+  // /v1/shop/settings) and re-resolves the active language against them.
+  const configureLanguages = useCallback((raw) => {
+    const next = normalizeConfig(raw);
+    writeStorage(CONFIG_KEY, JSON.stringify(next));
+    setConfig((prev) =>
+      prev.defaultLanguage === next.defaultLanguage && prev.languages.join() === next.languages.join() ? prev : next
+    );
+    setLocaleState((current) => pickLocale(next, current));
   }, []);
 
   const value = useMemo(
     () => ({
       locale,
       setLocale,
+      dir: dirFor(locale),
+      languages: LANGUAGES.filter((l) => config.languages.includes(l.code)),
+      defaultLanguage: config.defaultLanguage,
+      configureLanguages,
       t: (key, vars) => translate(locale, key, vars),
       errMsg: (error) => errorMessage(error, locale),
       formatDate: (value, opts) => {
         if (!value) return "";
         const d = new Date(value);
         if (Number.isNaN(d.getTime())) return "";
-        return d.toLocaleDateString(locale, opts || { year: "numeric", month: "short", day: "numeric" });
+        return d.toLocaleDateString(intlLocale(locale), opts || { year: "numeric", month: "short", day: "numeric" });
       },
       formatDateTime: (value) => {
         if (!value) return "";
         const d = new Date(value);
         if (Number.isNaN(d.getTime())) return "";
-        return d.toLocaleString(locale, { dateStyle: "medium", timeStyle: "short" });
+        return d.toLocaleString(intlLocale(locale), { dateStyle: "medium", timeStyle: "short" });
       },
     }),
-    [locale, setLocale]
+    [locale, setLocale, config, configureLanguages]
   );
 
   return <I18nContext.Provider value={value}>{children}</I18nContext.Provider>;

@@ -123,9 +123,9 @@ func (m *Mailer) SendNewAccount(ctx context.Context, to, firstName, login, accou
 	values := m.values(ctx, woo.Order{Billing: woo.Address{FirstName: firstName}})
 	subject := fill(orDefault(es.Subject, def.Subject[lang]), values)
 	heading := fill(orDefault(es.Heading, def.Heading[lang]), values)
-	greeting := map[string]string{"en": "Hi %s,", "fr": "Bonjour %s,"}[lang]
-	userLine := map[string]string{"en": "Your username is <strong>%s</strong>.", "fr": "Votre identifiant est <strong>%s</strong>."}[lang]
-	button := map[string]string{"en": "My account", "fr": "Mon compte"}[lang]
+	greeting := map[string]string{"en": "Hi %s,", "fr": "Bonjour %s,", "ar": "مرحبًا %s،"}[lang]
+	userLine := map[string]string{"en": "Your username is <strong>%s</strong>.", "fr": "Votre identifiant est <strong>%s</strong>.", "ar": "اسم المستخدم الخاص بك هو <strong>%s</strong>."}[lang]
+	button := map[string]string{"en": "My account", "fr": "Mon compte", "ar": "حسابي"}[lang]
 	content := fmt.Sprintf(`<p>%s</p><p>%s</p><p>%s</p><p><a href="%s" style="color:%s;font-weight:600">%s</a></p>`,
 		fmt.Sprintf(greeting, template.HTMLEscapeString(orDefault(firstName, login))), template.HTMLEscapeString(fill(def.Intro[lang], values)),
 		fmt.Sprintf(userLine, template.HTMLEscapeString(login)), template.HTMLEscapeString(accountURL), m.color(ctx, "base"), button)
@@ -165,7 +165,7 @@ func (m *Mailer) values(ctx context.Context, o woo.Order) map[string]string {
 	date := ""
 	if !o.CreatedAt.IsZero() {
 		layout := "January 2, 2006"
-		if m.woo.Lang(ctx) == "fr" {
+		if l := m.woo.Lang(ctx); l == "fr" || l == "ar" {
 			layout = "02/01/2006"
 		}
 		date = o.CreatedAt.In(time.Local).Format(layout)
@@ -232,9 +232,12 @@ func (m *Mailer) Render(ctx context.Context, def woo.EmailDef, es woo.EmailSetti
 	values := m.values(ctx, o)
 	subject := fill(orDefault(es.Subject, def.Subject[lang]), values)
 	heading := fill(orDefault(es.Heading, def.Heading[lang]), values)
-	t := func(en, fr string) string {
-		if lang == "fr" {
+	t := func(en, fr, ar string) string {
+		switch lang {
+		case "fr":
 			return fr
+		case "ar":
+			return ar
 		}
 		return en
 	}
@@ -242,7 +245,7 @@ func (m *Mailer) Render(ctx context.Context, def woo.EmailDef, es woo.EmailSetti
 	base := m.color(ctx, "base")
 	var b strings.Builder
 	if def.Customer {
-		b.WriteString("<p>" + esc(fmt.Sprintf(t("Hi %s,", "Bonjour %s,"), orDefault(o.Billing.FirstName, t("there", "")))) + "</p>")
+		b.WriteString("<p>" + esc(fmt.Sprintf(t("Hi %s,", "Bonjour %s,", "مرحبًا %s،"), orDefault(o.Billing.FirstName, t("there", "", "")))) + "</p>")
 	}
 	b.WriteString("<p>" + esc(fill(def.Intro[lang], values)) + "</p>")
 	if note != "" && (def.ID == "customer_note" || strings.Contains(def.ID, "refunded")) {
@@ -255,11 +258,15 @@ func (m *Mailer) Render(ctx context.Context, def woo.EmailDef, es woo.EmailSetti
 	}
 	// order table
 	b.WriteString(fmt.Sprintf(`<h2 style="color:%s;font-size:18px;margin:16px 0 8px">%s</h2>`, base,
-		esc(fmt.Sprintf(t("[Order #%s] (%s)", "[Commande n°%s] (%s)"), o.Number, values["order_date"]))))
-	cell := `style="text-align:left;border:1px solid #e5e5e5;padding:10px;vertical-align:middle"`
+		esc(fmt.Sprintf(t("[Order #%s] (%s)", "[Commande n°%s] (%s)", "[الطلب رقم %s] (%s)"), o.Number, values["order_date"]))))
+	align := "left"
+	if lang == "ar" {
+		align = "right"
+	}
+	cell := `style="text-align:` + align + `;border:1px solid #e5e5e5;padding:10px;vertical-align:middle"`
 	b.WriteString(`<table cellspacing="0" cellpadding="6" border="1" style="width:100%;border-collapse:collapse;border:1px solid #e5e5e5;margin-bottom:16px">`)
 	b.WriteString(fmt.Sprintf(`<thead><tr><th %s>%s</th><th %s>%s</th><th %s>%s</th></tr></thead><tbody>`,
-		cell, t("Product", "Produit"), cell, t("Quantity", "Quantité"), cell, t("Price", "Prix")))
+		cell, t("Product", "Produit", "المنتج"), cell, t("Quantity", "Quantité", "الكمية"), cell, t("Price", "Prix", "السعر")))
 	for _, li := range o.LineItems {
 		amount := li.Total
 		if o.PricesIncludeTax || m.woo.Option(ctx, "woocommerce_tax_display_cart") == "incl" {
@@ -289,26 +296,26 @@ func (m *Mailer) Render(ctx context.Context, def woo.EmailDef, es woo.EmailSetti
 			subtotal += li.SubtotalTax
 		}
 	}
-	row(t("Subtotal:", "Sous-total :"), m.money(ctx, subtotal, o.Currency))
+	row(t("Subtotal:", "Sous-total :", "المجموع الفرعي:"), m.money(ctx, subtotal, o.Currency))
 	if o.DiscountTotal > 0 {
-		row(t("Discount:", "Remise :"), "-"+m.money(ctx, o.DiscountTotal, o.Currency))
+		row(t("Discount:", "Remise :", "الخصم:"), "-"+m.money(ctx, o.DiscountTotal, o.Currency))
 	}
 	for _, sl := range o.ShippingLines {
-		row(t("Shipping:", "Expédition :"), m.money(ctx, sl.Total, o.Currency)+" — "+sl.MethodTitle)
+		row(t("Shipping:", "Expédition :", "الشحن:"), m.money(ctx, sl.Total, o.Currency)+" — "+sl.MethodTitle)
 	}
 	for _, tl := range o.TaxLines {
 		row(tl.Label+":", m.money(ctx, tl.TaxTotal+tl.ShippingTaxTotal, o.Currency))
 	}
 	if o.PaymentMethodTitle != "" {
-		row(t("Payment method:", "Moyen de paiement :"), o.PaymentMethodTitle)
+		row(t("Payment method:", "Moyen de paiement :", "طريقة الدفع:"), o.PaymentMethodTitle)
 	}
 	for _, r := range o.Refunds {
-		row(t("Refund:", "Remboursement :"), "-"+m.money(ctx, r.Amount, o.Currency))
+		row(t("Refund:", "Remboursement :", "الاسترداد:"), "-"+m.money(ctx, r.Amount, o.Currency))
 	}
-	row(t("Total:", "Total :"), m.money(ctx, o.Total-o.TotalRefunded, o.Currency))
+	row(t("Total:", "Total :", "الإجمالي:"), m.money(ctx, o.Total-o.TotalRefunded, o.Currency))
 	b.WriteString(`</tfoot></table>`)
 	if o.CustomerNote != "" {
-		b.WriteString("<p><strong>" + t("Note:", "Note :") + "</strong> " + nl2br(o.CustomerNote) + "</p>")
+		b.WriteString("<p><strong>" + t("Note:", "Note :", "ملاحظة:") + "</strong> " + nl2br(o.CustomerNote) + "</p>")
 	}
 	// addresses
 	addr := func(a woo.Address) string {
@@ -324,16 +331,16 @@ func (m *Mailer) Render(ctx context.Context, def woo.EmailDef, es woo.EmailSetti
 	}
 	b.WriteString(`<table cellspacing="0" cellpadding="0" border="0" style="width:100%;margin-bottom:16px"><tr>`)
 	b.WriteString(fmt.Sprintf(`<td valign="top" width="50%%" style="padding:0 8px 0 0"><h2 style="color:%s;font-size:16px">%s</h2><address style="padding:12px;border:1px solid #e5e5e5;font-style:normal">%s</address></td>`,
-		base, t("Billing address", "Adresse de facturation"), addr(o.Billing)))
+		base, t("Billing address", "Adresse de facturation", "عنوان الفوترة"), addr(o.Billing)))
 	if o.Shipping.Address1 != "" {
 		b.WriteString(fmt.Sprintf(`<td valign="top" width="50%%" style="padding:0 0 0 8px"><h2 style="color:%s;font-size:16px">%s</h2><address style="padding:12px;border:1px solid #e5e5e5;font-style:normal">%s</address></td>`,
-			base, t("Shipping address", "Adresse de livraison"), addr(o.Shipping)))
+			base, t("Shipping address", "Adresse de livraison", "عنوان الشحن"), addr(o.Shipping)))
 	}
 	b.WriteString(`</tr></table>`)
 	if es.AdditionalContent != "" {
 		b.WriteString("<p>" + nl2br(fill(es.AdditionalContent, values)) + "</p>")
 	} else if def.Customer {
-		b.WriteString("<p>" + esc(t("Thanks for using "+values["site_title"]+"!", "Merci d'avoir choisi "+values["site_title"]+" !")) + "</p>")
+		b.WriteString("<p>" + esc(t("Thanks for using "+values["site_title"]+"!", "Merci d'avoir choisi "+values["site_title"]+" !", "شكرًا لاختيارك "+values["site_title"]+"!")) + "</p>")
 	}
 	return subject, m.wrap(ctx, heading, template.HTML(b.String())), nil
 }
@@ -354,7 +361,11 @@ func (m *Mailer) wrap(ctx context.Context, heading string, content template.HTML
 	}
 	footer := orDefault(m.woo.Option(ctx, "woocommerce_email_footer_text"), "{site_title}")
 	footer = fill(footer, m.values(ctx, woo.Order{}))
-	return fmt.Sprintf(`<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>%s</title></head>
+	lang, dir := m.woo.Lang(ctx), "ltr"
+	if lang == "ar" {
+		dir = "rtl"
+	}
+	return fmt.Sprintf(`<!DOCTYPE html><html lang="`+lang+`" dir="`+dir+`"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>%s</title></head>
 <body style="margin:0;padding:0;background-color:%s;font-family:'Helvetica Neue',Helvetica,Roboto,Arial,sans-serif">
 <table width="100%%" cellpadding="0" cellspacing="0" style="background-color:%s;padding:32px 0"><tr><td align="center">
 <p style="margin:0 0 16px"><img src="%s" alt="%s" style="max-height:80px;max-width:240px"></p>
@@ -376,10 +387,10 @@ func (m *Mailer) SendInvoice(ctx context.Context, o woo.Order, number, filename 
 	}
 	lang := m.woo.Lang(ctx)
 	values := m.values(ctx, o)
-	subject := fill(map[string]string{"en": "Your invoice {number} from {site_title}", "fr": "Votre facture {number} – {site_title}"}[lang], values)
+	subject := fill(map[string]string{"en": "Your invoice {number} from {site_title}", "fr": "Votre facture {number} – {site_title}", "ar": "فاتورتك {number} من {site_title}"}[lang], values)
 	subject = strings.ReplaceAll(subject, "{number}", number)
-	greeting := map[string]string{"en": "Hi %s,", "fr": "Bonjour %s,"}[lang]
-	body := map[string]string{"en": "Please find attached the invoice %s for your order #%s.", "fr": "Veuillez trouver ci-joint la facture %s de votre commande n°%s."}[lang]
+	greeting := map[string]string{"en": "Hi %s,", "fr": "Bonjour %s,", "ar": "مرحبًا %s،"}[lang]
+	body := map[string]string{"en": "Please find attached the invoice %s for your order #%s.", "fr": "Veuillez trouver ci-joint la facture %s de votre commande n°%s.", "ar": "تجد في المرفق الفاتورة %s الخاصة بطلبك رقم %s."}[lang]
 	content := fmt.Sprintf("<p>%s</p><p>%s</p>", template.HTMLEscapeString(fmt.Sprintf(greeting, orDefault(o.Billing.FirstName, ""))),
 		template.HTMLEscapeString(fmt.Sprintf(body, number, o.Number)))
 	att := []email.Attachment{{MimeType: "application/pdf", FileName: filename, B64: base64.StdEncoding.EncodeToString(pdf)}}

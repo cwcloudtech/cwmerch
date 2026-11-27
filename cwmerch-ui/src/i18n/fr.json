@@ -1160,7 +1160,12 @@
     "closedMessage": "Message de fermeture",
     "closedMessageHint": "Affiché sur la page de fermeture (vide = message par défaut).",
     "registrationEnabled": "Autoriser la création de compte",
-    "registrationEnabledHint": "Désactivée, le formulaire d'inscription est masqué et les inscriptions sont refusées."
+    "registrationEnabledHint": "Désactivée, le formulaire d'inscription est masqué et les inscriptions sont refusées.",
+    "languages": "Langues",
+    "languagesIntro": "Langues proposées aux visiteurs et à l'équipe. Le sélecteur de langue ne liste que celles activées (masqué s'il n'y en a qu'une) ; la détection du navigateur choisit parmi elles.",
+    "languagesAtLeastOne": "Au moins une langue doit rester activée.",
+    "defaultLanguage": "Langue par défaut",
+    "defaultLanguageHint": "Utilisée lorsque la langue du navigateur du visiteur n'est pas activée."
   },
   "onlinePayments": {
     "title": "Paiements en ligne",

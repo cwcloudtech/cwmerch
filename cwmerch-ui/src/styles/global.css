@@ -192,7 +192,7 @@ code {
 }
 .skip-link {
   position: absolute;
-  left: 8px;
+  inset-inline-start: 8px;
   top: -48px;
   z-index: 100;
   background: var(--c-primary);
@@ -219,7 +219,7 @@ code {
   margin-top: 16px;
 }
 .num {
-  text-align: right;
+  text-align: end;
   font-variant-numeric: tabular-nums;
 }
 .danger {
@@ -270,11 +270,11 @@ code {
 .two-col {
   display: grid;
   gap: 24px;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
 }
 @media (min-width: 760px) {
   .two-col {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
 }
 .show-mobile {
@@ -387,7 +387,7 @@ code {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  text-align: left;
+  text-align: start;
 }
 .input {
   width: 100%;
@@ -455,14 +455,14 @@ textarea.mono {
 .form-grid-3 {
   display: grid;
   gap: 14px 16px;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
 }
 @media (min-width: 640px) {
   .form-grid {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
   .form-grid-3 {
-    grid-template-columns: repeat(3, 1fr);
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
   .span-2 {
     grid-column: span 2;
@@ -502,7 +502,8 @@ textarea.mono {
   accent-color: var(--c-primary);
 }
 .payment-desc {
-  margin: 6px 0 0 26px;
+  margin: 6px 0 0;
+  margin-inline-start: 26px;
   padding: 10px 12px;
   background: var(--c-surface);
   border-radius: var(--c-radius);
@@ -537,7 +538,7 @@ textarea.mono {
 .toggle-thumb {
   position: absolute;
   top: 3px;
-  left: 3px;
+  inset-inline-start: 3px;
   width: 18px;
   height: 18px;
   border-radius: 50%;
@@ -561,7 +562,7 @@ textarea.mono {
 }
 .toggle .hint {
   flex-basis: 100%;
-  margin-left: 54px;
+  margin-inline-start: 54px;
 }
 @media (prefers-reduced-motion: reduce) {
   .toggle-track,
@@ -576,6 +577,7 @@ textarea.mono {
   border: 1px solid var(--c-border);
   border-radius: calc(var(--c-radius) + 4px);
   padding: 20px;
+  overflow-wrap: break-word;
 }
 .card-inner {
   border: 1px solid var(--c-border);
@@ -598,7 +600,7 @@ textarea.mono {
 .notice {
   padding: 12px 16px;
   border-radius: var(--c-radius);
-  border-left: 4px solid var(--info);
+  border-inline-start: 4px solid var(--info);
   background: color-mix(in srgb, var(--info) 10%, var(--c-card));
   margin: 0 0 12px;
 }
@@ -748,7 +750,7 @@ textarea.mono {
   border-bottom-color: var(--c-primary);
 }
 .tab-count {
-  margin-left: 6px;
+  margin-inline-start: 6px;
   font-size: 0.75rem;
   background: var(--c-surface);
   border-radius: 999px;
@@ -767,12 +769,12 @@ textarea.mono {
 .table td {
   padding: 10px 12px;
   border-bottom: 1px solid var(--c-border);
-  text-align: left;
+  text-align: start;
   vertical-align: middle;
 }
 .table th.num,
 .table td.num {
-  text-align: right;
+  text-align: end;
 }
 .table thead th {
   font-size: 0.8rem;
@@ -890,7 +892,7 @@ textarea.mono {
 .stars-count {
   color: var(--c-muted);
   font-size: 0.85rem;
-  margin-left: 4px;
+  margin-inline-start: 4px;
 }
 .star-input {
   border: 0;
@@ -998,12 +1000,12 @@ textarea.mono {
   margin: 0 auto;
 }
 .header-search .input {
-  padding-right: 44px;
+  padding-inline-end: 44px;
   border-radius: 999px;
 }
 .header-search .icon-btn {
   position: absolute;
-  right: 2px;
+  inset-inline-end: 2px;
   top: 2px;
 }
 @media (min-width: 900px) {
@@ -1015,12 +1017,12 @@ textarea.mono {
   display: flex;
   align-items: center;
   gap: 2px;
-  margin-left: auto;
+  margin-inline-start: auto;
 }
 .cart-badge {
   position: absolute;
   top: 2px;
-  right: 0;
+  inset-inline-end: 0;
   min-width: 18px;
   height: 18px;
   padding: 0 5px;
@@ -1090,11 +1092,11 @@ textarea.mono {
 .footer-grid {
   display: grid;
   gap: 28px;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
 }
 @media (min-width: 760px) {
   .footer-grid {
-    grid-template-columns: 2fr 1fr 1fr;
+    grid-template-columns: minmax(0, 2fr) minmax(0, 1fr) minmax(0, 1fr);
   }
 }
 .footer-title {
@@ -1220,13 +1222,13 @@ textarea.mono {
 }
 @media (min-width: 640px) {
   .hero-content {
-    padding-left: 76px;
-    padding-right: 76px;
+    padding-inline-start: 76px;
+    padding-inline-end: 76px;
   }
 }
 .align-left .hero-content {
   align-items: flex-start;
-  text-align: left;
+  text-align: start;
 }
 .align-center .hero-content {
   align-items: center;
@@ -1234,7 +1236,7 @@ textarea.mono {
 }
 .align-right .hero-content {
   align-items: flex-end;
-  text-align: right;
+  text-align: end;
 }
 .hero-title {
   font-family: var(--cwmerch-font-heading);
@@ -1279,16 +1281,16 @@ textarea.mono {
   }
 }
 .hero-prev {
-  left: 16px;
+  inset-inline-start: 16px;
 }
 .hero-next {
-  right: 16px;
+  inset-inline-end: 16px;
 }
 .hero-dots {
   position: absolute;
   bottom: 16px;
-  left: 0;
-  right: 0;
+  inset-inline-start: 0;
+  inset-inline-end: 0;
   display: flex;
   justify-content: center;
   gap: 8px;
@@ -1369,7 +1371,7 @@ textarea.mono {
 .oos-flash {
   position: absolute;
   top: 10px;
-  left: 10px;
+  inset-inline-start: 10px;
   background: var(--cwmerch-sale);
   color: #fff;
   font-size: 0.75rem;
@@ -1379,8 +1381,8 @@ textarea.mono {
   text-transform: uppercase;
 }
 .oos-flash {
-  left: auto;
-  right: 10px;
+  inset-inline-start: auto;
+  inset-inline-end: 10px;
   background: var(--cwmerch-secondary);
 }
 .product-card-body {
@@ -1413,7 +1415,7 @@ textarea.mono {
 .price del {
   color: var(--cwmerch-muted);
   font-weight: 400;
-  margin-right: 4px;
+  margin-inline-end: 4px;
 }
 .price ins {
   text-decoration: none;
@@ -1456,8 +1458,8 @@ textarea.mono {
 }
 .category-card-name {
   position: absolute;
-  left: 0;
-  right: 0;
+  inset-inline-start: 0;
+  inset-inline-end: 0;
   bottom: 0;
   padding: 28px 14px 12px;
   background: linear-gradient(transparent, rgba(0, 0, 0, 0.65));
@@ -1477,7 +1479,7 @@ textarea.mono {
 }
 .breadcrumbs li + li::before {
   content: "/";
-  margin-right: 6px;
+  margin-inline-end: 6px;
   opacity: 0.6;
 }
 .breadcrumbs a {
@@ -1489,11 +1491,11 @@ textarea.mono {
 .catalogue-layout {
   display: grid;
   gap: 28px;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
 }
 @media (min-width: 900px) {
   .catalogue-layout {
-    grid-template-columns: 240px 1fr;
+    grid-template-columns: 240px minmax(0, 1fr);
   }
 }
 .filters {
@@ -1522,7 +1524,7 @@ textarea.mono {
   margin: 0;
 }
 .cat-tree-sub {
-  padding-left: 14px;
+  padding-inline-start: 14px;
 }
 .cat-tree a {
   display: block;
@@ -1559,11 +1561,11 @@ textarea.mono {
 .product-main {
   display: grid;
   gap: 32px;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
 }
 @media (min-width: 860px) {
   .product-main {
-    grid-template-columns: 1.05fr 1fr;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
   }
 }
 .gallery-main {
@@ -1683,14 +1685,14 @@ textarea.mono {
 .checkout-layout {
   display: grid;
   gap: 28px;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
 }
 @media (min-width: 960px) {
   .cart-layout {
-    grid-template-columns: 1fr 360px;
+    grid-template-columns: minmax(0, 1fr) 360px;
   }
   .checkout-layout {
-    grid-template-columns: 1fr 420px;
+    grid-template-columns: minmax(0, 1fr) 420px;
   }
   .cart-totals,
   .checkout-review {
@@ -1747,11 +1749,11 @@ textarea.mono {
 .totals-table td {
   padding: 10px 0;
   border-bottom: 1px solid var(--c-border);
-  text-align: left;
+  text-align: start;
   vertical-align: top;
 }
 .totals-table td {
-  text-align: right;
+  text-align: end;
 }
 .grand-total th,
 .grand-total td {
@@ -1791,7 +1793,7 @@ textarea.mono {
 }
 .bank-account {
   display: grid;
-  grid-template-columns: max-content 1fr;
+  grid-template-columns: max-content minmax(0, 1fr);
   gap: 4px 16px;
   margin: 8px 0 16px;
 }
@@ -1806,11 +1808,11 @@ textarea.mono {
 .auth-grid {
   display: grid;
   gap: 24px;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
 }
 @media (min-width: 860px) {
   .auth-grid {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
 }
 .divider {
@@ -1832,11 +1834,11 @@ textarea.mono {
 .account-layout {
   display: grid;
   gap: 28px;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
 }
 @media (min-width: 860px) {
   .account-layout {
-    grid-template-columns: 220px 1fr;
+    grid-template-columns: 220px minmax(0, 1fr);
   }
 }
 .account-nav {
@@ -1858,13 +1860,13 @@ textarea.mono {
   text-decoration: none;
   border: 1px solid var(--c-border);
   background: var(--c-card);
-  text-align: left;
+  text-align: start;
 }
 @media (min-width: 860px) {
   .account-nav a,
   .account-nav button {
     border: 0;
-    border-left: 3px solid transparent;
+    border-inline-start: 3px solid transparent;
     border-radius: 0;
     background: transparent;
   }
@@ -1927,7 +1929,7 @@ textarea.mono {
 /* assistant */
 .assistant {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   border: 1px solid var(--c-border);
   border-radius: calc(var(--c-radius) + 4px);
   overflow: hidden;
@@ -1936,14 +1938,14 @@ textarea.mono {
 }
 @media (min-width: 860px) {
   .assistant {
-    grid-template-columns: 260px 1fr;
+    grid-template-columns: 260px minmax(0, 1fr);
   }
   .assistant.is-collapsed {
-    grid-template-columns: 64px 1fr;
+    grid-template-columns: 64px minmax(0, 1fr);
   }
 }
 .assistant-rail {
-  border-right: 1px solid var(--c-border);
+  border-inline-end: 1px solid var(--c-border);
   background: var(--c-surface);
   padding: 12px;
   display: flex;
@@ -1983,7 +1985,7 @@ textarea.mono {
   border: 0;
   color: inherit;
   font: inherit;
-  text-align: left;
+  text-align: start;
   padding: 8px;
   cursor: pointer;
 }
@@ -2022,12 +2024,12 @@ textarea.mono {
   align-self: flex-end;
   background: var(--c-primary);
   color: var(--c-primary-text);
-  border-bottom-right-radius: 4px;
+  border-end-end-radius: 4px;
 }
 .message-assistant {
   align-self: flex-start;
   background: var(--c-surface);
-  border-bottom-left-radius: 4px;
+  border-end-start-radius: 4px;
 }
 .message-error {
   align-self: flex-start;
@@ -2129,7 +2131,8 @@ textarea.mono {
   display: flex;
   flex-direction: column;
   position: fixed;
-  inset: 0 auto 0 0;
+  inset-block: 0;
+  inset-inline: 0 auto;
   transform: translateX(-100%);
   transition: transform 0.2s;
   z-index: 200;
@@ -2173,15 +2176,15 @@ textarea.mono {
   color: var(--a-sidebar-text);
   text-decoration: none;
   font-size: 0.93rem;
-  border-left: 3px solid transparent;
+  border-inline-start: 3px solid transparent;
   width: 100%;
   background: none;
   border-top: 0;
-  border-right: 0;
+  border-inline-end: 0;
   border-bottom: 0;
   font-family: inherit;
   cursor: pointer;
-  text-align: left;
+  text-align: start;
 }
 .admin-nav-link:hover {
   background: rgba(255, 255, 255, 0.06);
@@ -2190,7 +2193,7 @@ textarea.mono {
 .admin-nav-link.active {
   background: var(--a-sidebar-active);
   color: #fff;
-  border-left-color: #72aee6;
+  border-inline-start-color: #72aee6;
 }
 .admin-nav-group.is-open > .admin-nav-link:not(.active) {
   background: rgba(255, 255, 255, 0.04);
@@ -2202,7 +2205,8 @@ textarea.mono {
   padding: 4px 0;
 }
 .admin-subnav a {
-  padding: 6px 16px 6px 44px;
+  padding-block: 6px;
+  padding-inline: 44px 16px;
   color: #c3c4c7;
   text-decoration: none;
   font-size: 0.88rem;
@@ -2265,7 +2269,7 @@ textarea.mono {
 .admin-columns {
   display: grid;
   gap: 24px;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   align-items: start;
 }
 @media (min-width: 1100px) {
@@ -2365,7 +2369,7 @@ textarea.mono {
   width: 14px;
   height: 10px;
   background: color-mix(in srgb, var(--c-primary) 70%, transparent);
-  margin-left: 10px;
+  margin-inline-start: 10px;
 }
 .legend-line {
   height: 3px;
@@ -2373,7 +2377,7 @@ textarea.mono {
 }
 .rank-list {
   margin: 0;
-  padding-left: 20px;
+  padding-inline-start: 20px;
 }
 .rank-list li {
   display: list-item;
@@ -2381,7 +2385,7 @@ textarea.mono {
   border-bottom: 1px solid var(--c-border);
 }
 .rank-list li span {
-  float: right;
+  float: inline-end;
 }
 .order-notes {
   list-style: none;
@@ -2419,7 +2423,7 @@ textarea.mono {
   padding: 0;
   margin: 0;
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
 .image-list li {
@@ -2444,7 +2448,7 @@ textarea.mono {
 .image-list .badge {
   position: absolute;
   top: 6px;
-  left: 6px;
+  inset-inline-start: 6px;
 }
 .image-actions {
   display: flex;
@@ -2490,7 +2494,7 @@ textarea.mono {
   min-width: 56px;
 }
 .review-admin.status-hold {
-  border-left: 4px solid var(--warning);
+  border-inline-start: 4px solid var(--warning);
 }
 .review-admin.status-spam,
 .review-admin.status-trash {
@@ -2510,7 +2514,7 @@ textarea.mono {
 .appearance-layout {
   display: grid;
   gap: 24px;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   align-items: start;
 }
 @media (min-width: 1200px) {
@@ -2578,7 +2582,7 @@ textarea.mono {
   flex: none;
 }
 .color-field code {
-  margin-left: auto;
+  margin-inline-start: auto;
 }
 .appearance-preview {
   border: 1px solid var(--a-border);
@@ -2706,7 +2710,7 @@ textarea.mono {
   width: 200px;
 }
 .badge-online {
-  margin-left: 6px;
+  margin-inline-start: 6px;
   font-size: 0.72rem;
 }
 .pay-now {
@@ -2722,12 +2726,12 @@ textarea.mono {
 .kv-list {
   display: grid;
   gap: 6px 16px;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
   margin: 0;
 }
 @media (min-width: 640px) {
   .kv-list {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
   }
 }
 .kv-list dt {
@@ -2780,4 +2784,73 @@ textarea.mono {
   gap: 8px;
   font-size: 1.05rem;
   margin: 0;
+}
+
+
+/* ---------- right-to-left (Arabic) ----------
+ * Layout uses logical properties (inline-start/end), so most of it mirrors on
+ * its own under <html dir="rtl">; below are what logical properties can't do:
+ * transforms, direction icons, LTR islands and the Arabic font. */
+html[lang="ar"],
+html[lang="ar"] .storefront {
+  --c-font: "Noto Sans Arabic", var(--cwmerch-font-body);
+  --c-font-heading: "Noto Sans Arabic", var(--cwmerch-font-heading);
+}
+html[lang="ar"] .admin-shell {
+  --c-font: "Noto Sans Arabic", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --c-font-heading: var(--c-font);
+}
+html[lang="ar"] .hero-title {
+  font-family: "Noto Sans Arabic", var(--cwmerch-font-heading);
+}
+html[lang="ar"] .product-card-title {
+  font-family: "Noto Sans Arabic", var(--cwmerch-font-body);
+}
+/* Arabic is cursive: tracking breaks the letter joins (and there is no case). */
+html[lang="ar"] .table thead th,
+html[lang="ar"] .footer-title,
+html[lang="ar"] .filter-title,
+html[lang="ar"] .summary-label {
+  letter-spacing: normal;
+  text-transform: none;
+}
+/* Icons that point "forward"/"back" mirror with the reading direction. */
+[dir="rtl"] .flip-rtl {
+  transform: scaleX(-1);
+}
+[dir="rtl"] .toggle input:checked + .toggle-track .toggle-thumb {
+  transform: translateX(-20px);
+}
+[dir="rtl"] .admin-sidebar {
+  transform: translateX(100%);
+}
+[dir="rtl"] .admin-sidebar.is-open {
+  transform: none;
+}
+@media (min-width: 900px) {
+  [dir="rtl"] .admin-sidebar {
+    transform: none;
+  }
+}
+/* LTR islands: code, the CSS / template editors, identifiers and addresses. */
+code,
+kbd,
+samp,
+pre {
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+pre {
+  text-align: left;
+}
+[dir="rtl"] input[type="email"],
+[dir="rtl"] input[type="url"],
+[dir="rtl"] input[type="tel"],
+[dir="rtl"] input[type="password"] {
+  direction: ltr;
+  text-align: right;
+}
+.ltr {
+  direction: ltr;
+  unicode-bidi: isolate;
 }

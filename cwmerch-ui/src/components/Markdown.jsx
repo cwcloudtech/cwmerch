@@ -48,7 +48,7 @@ const Markdown = ({ children, downloadExpiresAt = null }) => {
   };
 
   return (
-    <div className="markdown">
+    <div className="markdown" dir="auto">
       <ReactMarkdown remarkPlugins={[remarkGfm]} components={{ a: renderAnchor }}>
         {children || ""}
       </ReactMarkdown>

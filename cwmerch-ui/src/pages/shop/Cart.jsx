@@ -32,7 +32,7 @@ export const ShippingRates = ({ cart, onChange, name = "shipping-method" }) => {
         <label key={r.id} className="radio-row">
           <input type="radio" name={name} value={r.id} checked={cart.chosenShippingMethod === r.id} onChange={() => onChange(r.id)} />
           <span>
-            {r.label}
+            <bdi>{r.label}</bdi>
             {Number(r.cost) > 0 && `: ${money(Number(r.cost) + (cartIncl ? Number(r.tax || 0) : 0))}`}
           </span>
         </label>

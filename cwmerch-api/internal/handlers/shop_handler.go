@@ -438,7 +438,7 @@ func (h *ShopHandler) Checkout(w http.ResponseWriter, r *http.Request) {
 		paymentTitle = h.payments.Title(ctx, p.PaymentMethod)
 	}
 	if phoneConfirm && p.PaymentMethod == "" {
-		paymentTitle = map[string]string{"fr": "Confirmation par téléphone"}[h.woo.Lang(ctx)]
+		paymentTitle = map[string]string{"fr": "Confirmation par téléphone", "ar": "تأكيد عبر الهاتف"}[h.woo.Lang(ctx)]
 		if paymentTitle == "" {
 			paymentTitle = "Confirmation by phone"
 		}
@@ -490,8 +490,11 @@ func (h *ShopHandler) Checkout(w http.ResponseWriter, r *http.Request) {
 		Redirect: fmt.Sprintf("/checkout/order-received/%d?key=%s", order.ID, order.OrderKey), Token: token}
 	if phoneConfirm {
 		msg := "Your order number is %s. We will call you at %s to confirm it."
-		if h.woo.Lang(ctx) == "fr" {
+		switch h.woo.Lang(ctx) {
+		case "fr":
 			msg = "Votre numéro de commande est %s. Nous vous appellerons au %s pour la confirmer."
+		case "ar":
+			msg = "رقم طلبك هو %s. سنتصل بك على الرقم %s لتأكيده."
 		}
 		phone := strings.TrimSpace(p.Billing.Phone)
 		resp.Confirmation = &phoneConfirmation{OrderNumber: order.Number, Phone: phone, Message: fmt.Sprintf(msg, order.Number, phone)}

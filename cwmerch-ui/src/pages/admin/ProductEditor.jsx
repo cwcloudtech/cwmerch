@@ -72,7 +72,7 @@ const CategoryChecklist = ({ categories, value, onChange }) => {
     categories
       .filter((c) => Number(c.parent || 0) === parent)
       .map((c) => (
-        <li key={c.id} style={{ paddingLeft: depth * 16 }}>
+        <li key={c.id} style={{ paddingInlineStart: depth * 16 }}>
           <label className="check-row">
             <input
               type="checkbox"
@@ -469,10 +469,10 @@ const ProductEditor = () => {
                   {i === 0 && <span className="badge">{t("admin.products.featuredImage")}</span>}
                   <div className="image-actions">
                     <button type="button" className="icon-btn" onClick={() => moveImage(i, -1)} disabled={i === 0} aria-label={t("common.moveUp")}>
-                      <FiArrowLeft />
+                      <FiArrowLeft className="flip-rtl" />
                     </button>
                     <button type="button" className="icon-btn" onClick={() => moveImage(i, 1)} disabled={i === p.images.length - 1} aria-label={t("common.moveDown")}>
-                      <FiArrowRight />
+                      <FiArrowRight className="flip-rtl" />
                     </button>
                     <button type="button" className="icon-btn danger" onClick={() => set("images")(p.images.filter((_, j) => j !== i))} aria-label={t("common.remove")}>
                       <FiX />

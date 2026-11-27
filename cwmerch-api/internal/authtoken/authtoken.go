@@ -4,9 +4,9 @@
 package authtoken
 
 import (
+	"cwmerch-api/internal/utils"
 	"encoding/json"
 	"errors"
-	"cwmerch-api/internal/utils"
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"

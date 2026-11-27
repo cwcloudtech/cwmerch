@@ -2,10 +2,10 @@ package oidc
 
 import (
 	"context"
+	"cwmerch-api/internal/utils"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"cwmerch-api/internal/utils"
 	"io"
 	"net/http"
 	"net/url"

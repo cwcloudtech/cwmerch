@@ -5,8 +5,8 @@ package telemetry
 
 import (
 	"context"
-	"fmt"
 	"cwmerch-api/internal/utils"
+	"fmt"
 	"log/slog"
 
 	"go.opentelemetry.io/otel"

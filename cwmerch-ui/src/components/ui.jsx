@@ -189,7 +189,7 @@ export const Pagination = ({ page, totalPages, onChange }) => {
   return (
     <nav className="pagination" aria-label={t("common.pagination")}>
       <button type="button" className="page-btn" disabled={page <= 1} onClick={() => onChange(page - 1)} aria-label={t("common.previous")}>
-        <FiChevronLeft />
+        <FiChevronLeft className="flip-rtl" />
       </button>
       {from > 1 && (
         <>
@@ -219,7 +219,7 @@ export const Pagination = ({ page, totalPages, onChange }) => {
         </>
       )}
       <button type="button" className="page-btn" disabled={page >= totalPages} onClick={() => onChange(page + 1)} aria-label={t("common.next")}>
-        <FiChevronRight />
+        <FiChevronRight className="flip-rtl" />
       </button>
     </nav>
   );
@@ -231,7 +231,7 @@ export const Stars = ({ rating = 0, count }) => {
   const icons = [];
   for (let i = 1; i <= 5; i++) {
     if (r >= i) icons.push(<FaStar key={i} />);
-    else if (r >= i - 0.5) icons.push(<FaStarHalfAlt key={i} />);
+    else if (r >= i - 0.5) icons.push(<FaStarHalfAlt key={i} className="flip-rtl" />);
     else icons.push(<FaRegStar key={i} />);
   }
   return (

@@ -56,7 +56,7 @@ const VariationEditor = ({ product, variation, shippingClasses, taxClasses, onSa
     <div className="variation card-inner">
       <div className="variation-head">
         <button type="button" className="link-like" aria-expanded={open} onClick={() => setOpen((o) => !o)}>
-          {open ? <FiChevronDown aria-hidden="true" /> : <FiChevronRight aria-hidden="true" />} <strong>#{v.id}</strong> {label}
+          {open ? <FiChevronDown aria-hidden="true" /> : <FiChevronRight aria-hidden="true" className="flip-rtl" />} <strong>#{v.id}</strong> {label}
           <span className="muted small">
             {" "}
             {v.regularPrice !== "" && v.regularPrice !== null && v.regularPrice !== undefined ? money(v.salePrice || v.regularPrice) : t("admin.variations.noPrice")} · {t(`stock.${v.stockStatus || "instock"}`)}

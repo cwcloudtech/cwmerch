@@ -194,7 +194,7 @@ const ShopLayout = () => {
               <h2 className="footer-title">{t("footer.contact")}</h2>
               {contact.phone && (
                 <a href={`tel:${contact.phone.replace(/\s+/g, "")}`}>
-                  <FiPhone aria-hidden="true" /> {contact.phone}
+                  <FiPhone aria-hidden="true" /> <bdi dir="ltr">{contact.phone}</bdi>
                 </a>
               )}
               {contact.email && (

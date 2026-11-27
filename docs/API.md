@@ -309,3 +309,13 @@ When no online payment partner (Stripe, Konnect, Flouci) is enabled and configur
   is placed **on hold** with the note "To confirm by phone with the customer at …", and its payment
   method title is "Confirmation by phone" (French shops: "Confirmation par téléphone").
 * The 201 answer adds `"confirmation": {"orderNumber":"123","phone":"+216 20 000 000","message":"Your order number is 123. We will call you at … to confirm it."}`.
+
+### Languages
+
+* `GET/PUT /v1/admin/shop-config` also carries `"languages": ["en","fr","ar"]` (the languages the shop
+  offers, at least one; supported: `en`, `fr`, `ar`) and `"defaultLanguage": "fr"` (one of them) —
+  400 `errors.unsupportedLanguage`, `errors.languageRequired`, `errors.invalidDefaultLanguage`.
+* `GET /v1/shop/settings` exposes `languages` and `defaultLanguage`; the UI only offers those.
+* Customer emails follow WordPress' `WPLANG` when set, else the shop's default language (Arabic emails are
+  right-to-left). PDF exports are never Arabic: invoices are English or French (`locale` en/fr), the
+  accounting exports French.

@@ -82,10 +82,7 @@ func (r *Renderer) Page(ctx context.Context, rawPath string) Head {
 	if app.Logo != nil {
 		logo = app.Logo.Src
 	}
-	lang := "en"
-	if r.woo.Lang(ctx) == "fr" {
-		lang = "fr"
-	}
+	lang := r.woo.Lang(ctx)
 	h := Head{Title: shop, Description: tagline, Canonical: r.publicUI + path, Image: logo, Type: "website", Lang: lang}
 	org := map[string]any{"@context": "https://schema.org", "@type": "Organization", "name": shop, "url": r.publicUI + "/"}
 	if logo != "" {
@@ -108,8 +105,11 @@ func (r *Renderer) Page(ctx context.Context, rawPath string) Head {
 		}
 	case parts[0] == "shop":
 		h.Title = titleOf("Shop", shop)
-		if lang == "fr" {
+		switch lang {
+		case "fr":
 			h.Title = titleOf("Boutique", shop)
+		case "ar":
+			h.Title = titleOf("المتجر", shop)
 		}
 		h.JSONLD = []any{crumbs([2]string{shop, "/"}, [2]string{"Shop", "/shop"})}
 	case (parts[0] == "product-category" || parts[0] == "product-tag") && len(parts) > 1:
@@ -238,7 +238,7 @@ func RenderHead(h Head) string {
 	meta("property", "og:description", h.Description)
 	meta("property", "og:url", h.Canonical)
 	meta("property", "og:image", h.Image)
-	meta("property", "og:locale", map[string]string{"fr": "fr_FR", "en": "en_US"}[h.Lang])
+	meta("property", "og:locale", map[string]string{"fr": "fr_FR", "en": "en_US", "ar": "ar_AR"}[h.Lang])
 	card := "summary"
 	if h.Image != "" {
 		card = "summary_large_image"
@@ -278,6 +278,9 @@ func Inject(template string, h Head) string {
 			template = htmlLang.ReplaceAllString(template, `<html$1 lang="`+h.Lang+`"`)
 		} else {
 			template = strings.Replace(template, "<html", `<html lang="`+h.Lang+`"`, 1)
+		}
+		if h.Lang == "ar" && !strings.Contains(template, `dir="rtl"`) {
+			template = strings.Replace(template, "<html", `<html dir="rtl"`, 1)
 		}
 	}
 	return template

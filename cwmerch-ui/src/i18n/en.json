@@ -1160,7 +1160,12 @@
     "closedMessage": "Closed message",
     "closedMessageHint": "Shown on the closed page (empty = a default message).",
     "registrationEnabled": "Allow account registration",
-    "registrationEnabledHint": "When off, the register form is hidden and new sign-ups are refused."
+    "registrationEnabledHint": "When off, the register form is hidden and new sign-ups are refused.",
+    "languages": "Languages",
+    "languagesIntro": "Languages offered to visitors and staff. The language switcher only lists the enabled ones (hidden when only one is on); browser detection picks among them.",
+    "languagesAtLeastOne": "At least one language must stay enabled.",
+    "defaultLanguage": "Default language",
+    "defaultLanguageHint": "Used when the visitor's browser language is not enabled."
   },
   "onlinePayments": {
     "title": "Online payments",

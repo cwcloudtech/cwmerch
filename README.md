@@ -71,6 +71,9 @@ Plus:
   ocean, sunset, midnight, minimal, luxury), fonts, corner radius, announcement bar, home sections, social
   links and **custom CSS**.
 * **Forgotten password** and **contact form** (CWCloud `contactreq`).
+* **Languages**: English, French and **Arabic** (right-to-left layout) for the storefront, the customer
+  account, the back office, the emails and the AI assistant; the shop chooses which languages it offers
+  and its default one (*Settings → Shop*). PDF exports (invoices, accounting) stay in English or French.
 * **Public shop switch**: turn the storefront off and use cwmerch as an internal information system
   (back office, accounting, AI), with sign-up closed if wanted.
 * **Online payments** with pluggable adapters: **Stripe** (PaymentIntent + Stripe.js, signed webhook),

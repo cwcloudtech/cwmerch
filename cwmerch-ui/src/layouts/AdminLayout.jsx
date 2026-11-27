@@ -113,7 +113,7 @@ const AdminLayout = () => {
             <FiGrid aria-hidden="true" /> <span>{t("admin.nav.visitStore")}</span>
           </Link>
           <button type="button" className="admin-nav-link link-like" onClick={logout}>
-            <FiLogOut aria-hidden="true" /> <span>{t("account.logout")}</span>
+            <FiLogOut aria-hidden="true" className="flip-rtl" /> <span>{t("account.logout")}</span>
           </button>
         </div>
       </aside>

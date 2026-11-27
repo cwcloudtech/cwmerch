@@ -1,6 +1,10 @@
 // formatMoney renders an amount with the shop's WooCommerce currency options
 // (symbol, position, separators, decimals) from GET /v1/shop/settings.
 const NBSP = "\u00a0";
+// LRI…PDI: an amount stays one left-to-right run inside right-to-left text
+// (else Arabic pages show "DT 12,500" reordered around the symbol).
+const LRI = "\u2066";
+const PDI = "\u2069";
 
 export const formatMoney = (amount, settings = {}) => {
   const decimals = Number.isFinite(Number(settings.decimals)) ? Number(settings.decimals) : 2;
@@ -27,5 +31,5 @@ export const formatMoney = (amount, settings = {}) => {
     default:
       out = `${symbol}${number}`;
   }
-  return negative ? `-${out}` : out;
+  return `${LRI}${negative ? `-${out}` : out}${PDI}`;
 };

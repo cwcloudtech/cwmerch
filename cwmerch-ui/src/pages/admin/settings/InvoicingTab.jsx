@@ -130,7 +130,7 @@ const TemplateEditor = ({ value, onChange }) => {
     <section className="card stack settings-section">
       <h2>{t("invoicing.template")}</h2>
       <p className="muted small">{t("invoicing.templateIntro")}</p>
-      <TextArea label={t("invoicing.templateLabel")} value={value} onChange={onChange} rows={18} className="mono-area" placeholder={t("invoicing.templateEmpty")} spellCheck={false} />
+      <TextArea label={t("invoicing.templateLabel")} value={value} onChange={onChange} rows={18} className="mono-area" placeholder={t("invoicing.templateEmpty")} spellCheck={false} dir="ltr" />
       <div className="row wrap align-end">
         <button type="button" className="btn btn-secondary" onClick={loadDefault}>
           <FiFileText aria-hidden="true" /> {t("invoicing.loadDefault")}

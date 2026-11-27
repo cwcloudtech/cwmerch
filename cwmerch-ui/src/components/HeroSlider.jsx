@@ -20,7 +20,7 @@ const CtaLink = ({ href, children }) =>
 // HeroSlider is the home banner: autoplay (paused on hover/focus and when the
 // user prefers reduced motion), arrows, dots and touch swipe.
 const HeroSlider = ({ banner, preview = false }) => {
-  const { t } = useI18n();
+  const { t, dir } = useI18n();
   const slides = (banner?.slides || []).filter((s) => s.image || s.title);
   const [index, setIndex] = useState(0);
   const [paused, setPaused] = useState(false);
@@ -45,7 +45,9 @@ const HeroSlider = ({ banner, preview = false }) => {
   const onTouchEnd = (e) => {
     if (touchX.current === null) return;
     const dx = e.changedTouches[0].clientX - touchX.current;
-    if (Math.abs(dx) > 40) go(current + (dx < 0 ? 1 : -1));
+    // Swiping towards the reading start goes forward (leftward in LTR, rightward in RTL).
+    const forward = dir === "rtl" ? dx > 0 : dx < 0;
+    if (Math.abs(dx) > 40) go(current + (forward ? 1 : -1));
     touchX.current = null;
   };
 
@@ -78,8 +80,8 @@ const HeroSlider = ({ banner, preview = false }) => {
           )}
           <div className="hero-overlay" style={{ background: `rgba(0,0,0,${Math.min(90, Math.max(0, Number(s.overlay) || 0)) / 100})` }} />
           <div className="hero-content container" style={{ color: s.textColor || "#fff" }}>
-            {s.title && <p className="hero-title">{s.title}</p>}
-            {s.subtitle && <p className="hero-subtitle">{s.subtitle}</p>}
+            {s.title && <p className="hero-title" dir="auto">{s.title}</p>}
+            {s.subtitle && <p className="hero-subtitle" dir="auto">{s.subtitle}</p>}
             {s.buttonText && i === current && <CtaLink href={s.buttonLink}>{s.buttonText}</CtaLink>}
           </div>
         </div>
@@ -87,10 +89,10 @@ const HeroSlider = ({ banner, preview = false }) => {
       {count > 1 && (
         <>
           <button type="button" className="hero-arrow hero-prev" onClick={() => go(current - 1)} aria-label={t("home.previousSlide")}>
-            <FiChevronLeft />
+            <FiChevronLeft className="flip-rtl" />
           </button>
           <button type="button" className="hero-arrow hero-next" onClick={() => go(current + 1)} aria-label={t("home.nextSlide")}>
-            <FiChevronRight />
+            <FiChevronRight className="flip-rtl" />
           </button>
           <div className="hero-dots">
             {slides.map((_, i) => (

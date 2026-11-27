@@ -147,7 +147,7 @@ const Assistant = ({ embedded = false }) => {
           <aside className="assistant-rail" aria-label={t("ai.conversations")}>
             <div className="rail-head">
               <button type="button" className="icon-btn" onClick={toggleHistory} aria-label={collapsed ? t("ai.showHistory") : t("ai.hideHistory")} aria-expanded={!collapsed}>
-                {collapsed ? <FiChevronRight /> : <FiChevronLeft />}
+                {collapsed ? <FiChevronRight className="flip-rtl" /> : <FiChevronLeft className="flip-rtl" />}
               </button>
               {!collapsed && <strong>{t("ai.conversations")}</strong>}
             </div>
@@ -244,7 +244,7 @@ const Assistant = ({ embedded = false }) => {
                 </>
               )}
               <button type="submit" className="btn btn-primary" disabled={sending || !input.trim()} aria-label={t("ai.send")}>
-                <FiSend aria-hidden="true" />
+                <FiSend aria-hidden="true" className="flip-rtl" />
               </button>
             </form>
           </section>

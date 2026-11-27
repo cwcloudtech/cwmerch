@@ -324,7 +324,7 @@ const Appearance = () => {
 
           <section className="card stack">
             <h2>{t("appearance.customCss")}</h2>
-            <TextArea label={t("appearance.customCssLabel")} hint={t("appearance.customCssHint")} value={a.customCss} onChange={set("customCss")} rows={8} className="mono-area" spellCheck={false} />
+            <TextArea label={t("appearance.customCssLabel")} hint={t("appearance.customCssHint")} value={a.customCss} onChange={set("customCss")} rows={8} className="mono-area" spellCheck={false} dir="ltr" />
           </section>
         </div>
         <aside className="appearance-side">
