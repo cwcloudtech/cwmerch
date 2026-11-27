@@ -10,8 +10,10 @@ if [ "$1" = "nginx" ]; then
         mv ${file}.tmp $file
     done
 
-    # To prevent cache issues
-    sed -i 's!\(/assets/[^"]\+\)\.\(js\|css\)"!\1.\2?t='$(date '+%s')'"!g' "${front_app_path}/index.html"
+    # No "?t=" cache-busting on the assets: Vite already hashes their names,
+    # and the lazy-loaded chunks import the entry bundle WITHOUT the query, so
+    # a query on the entry made the browser load it twice (two Reacts: invalid
+    # hook calls, broken admin). index.html itself is served no-cache.
 
     # SEO pages are loaded from the API's public URL (the same CWMERCH_API_URL
     # as the browser): split it into origin (scheme://host[:port]) and base path.
