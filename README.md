@@ -113,6 +113,17 @@ docker compose up -d --build
 The compose file starts MySQL 8.4 (or PostgreSQL 17 with `DB_TYPE=postgres` and
 `COMPOSE_PROFILES=postgres` in `.env`), runs the Flyway migrations, then the API and the UI.
 
+The images are published on `rg.fr-par.scw.cloud/cwmerch-eesgg6` (`cwmerch-api`, `cwmerch-ui`,
+tagged with the version, `version-sha` and `latest`): to pull them instead of building,
+
+```bash
+docker pull rg.fr-par.scw.cloud/cwmerch-eesgg6/cwmerch-api:latest
+docker pull rg.fr-par.scw.cloud/cwmerch-eesgg6/cwmerch-ui:latest
+```
+
+or `docker compose pull api ui && docker compose up -d` (`VERSION=1.4.0` in `.env` pins a version,
+`REGISTRY` overrides the registry).
+
 ## Database
 
 cwmerch uses WordPress' table prefix (`DB_TABLE_PREFIX`, default `wp_`). The migrations use the Flyway
@@ -332,6 +343,7 @@ GitLab CI on `main`, like cwclock without its deployment: `mirror` (`ci/mirror.s
 to its GitHub mirror) and `build` (`ci/prune.sh` then `ci/deliver.sh`: builds the `cwmerch-api` and
 `cwmerch-ui` images with `docker buildx bake` and pushes them to the registry with the version from
 `VERSION`, plus `version-sha` and `latest` tags).
+Registry: `rg.fr-par.scw.cloud/cwmerch-eesgg6` (`cwmerch-api`, `cwmerch-ui`).
 
 ## License
 

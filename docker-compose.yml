@@ -82,7 +82,7 @@ services:
     build:
       context: .
       target: api
-    image: ${REGISTRY:-registry.cwcloud.tech}/cwmerch-api:${VERSION:-latest}
+    image: ${REGISTRY:-rg.fr-par.scw.cloud/cwmerch-eesgg6}/cwmerch-api:${VERSION:-latest}
     depends_on:
       flyway:
         condition: service_completed_successfully
@@ -100,7 +100,7 @@ services:
     build:
       context: .
       target: ui
-    image: ${REGISTRY:-registry.cwcloud.tech}/cwmerch-ui:${VERSION:-latest}
+    image: ${REGISTRY:-rg.fr-par.scw.cloud/cwmerch-eesgg6}/cwmerch-ui:${VERSION:-latest}
     depends_on:
       - api
     environment:
