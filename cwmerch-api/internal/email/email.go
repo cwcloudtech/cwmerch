@@ -43,6 +43,18 @@ type Sender struct {
 	client      *http.Client
 	// OnFailure is told about every email that could not be sent (Discord alert).
 	OnFailure func(ctx context.Context, to, subject, detail string)
+	// Resolve reads the CWCloud URL and key at send time (the WordPress
+	// option shared with the CWCloud plugin, set from the administration).
+	Resolve func(ctx context.Context) (apiURL, apiKey string)
+}
+
+func (s *Sender) creds(ctx context.Context) (string, string) {
+	if s.Resolve != nil {
+		if url, key := s.Resolve(ctx); url != "" && key != "" {
+			return url, key
+		}
+	}
+	return s.apiURL, s.apiKey
 }
 
 // NewSender builds a Sender; a blank apiURL/apiKey disables sending (logged).
@@ -51,7 +63,10 @@ func NewSender(apiURL, apiKey, from, selfBaseURL string) *Sender {
 }
 
 // Configured reports whether emails can actually be sent.
-func (s *Sender) Configured() bool { return utils.IsNotBlank(s.apiURL) && utils.IsNotBlank(s.apiKey) }
+func (s *Sender) Configured() bool {
+	url, key := s.creds(context.Background())
+	return utils.IsNotBlank(url) && utils.IsNotBlank(key)
+}
 
 // From is the default sender address.
 func (s *Sender) From() string { return s.from }
@@ -82,8 +97,9 @@ func (s *Sender) Send(ctx context.Context, from, to, cc, replyTo, subject, htmlC
 	if utils.IsBlank(from) {
 		from = s.from
 	}
-	if !s.Configured() {
-		slog.WarnContext(ctx, "cwcloud email api is not configured (CWCLOUD_API_URL/CWCLOUD_API_KEY), skipping email", "to", to, "subject", subject)
+	apiURL, apiKey := s.creds(ctx)
+	if utils.IsBlank(apiURL) || utils.IsBlank(apiKey) {
+		slog.WarnContext(ctx, "cwcloud email api is not configured (shop settings or CWCLOUD_API_KEY), skipping email", "to", to, "subject", subject)
 		return false
 	}
 	payload := request{From: from, To: to, Cc: cc, ReplyTo: replyTo, Subject: subject, Content: htmlContent, Attachments: attachments}
@@ -92,14 +108,14 @@ func (s *Sender) Send(ctx context.Context, from, to, cc, replyTo, subject, htmlC
 		slog.ErrorContext(ctx, "failed to marshal email payload", "error", err)
 		return false
 	}
-	req, err := http.NewRequestWithContext(context.WithoutCancel(ctx), http.MethodPost, s.apiURL+"/v1/email", bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(context.WithoutCancel(ctx), http.MethodPost, apiURL+"/v1/email", bytes.NewReader(body))
 	if err != nil {
 		slog.ErrorContext(ctx, "failed to build cwcloud email request", "error", err)
 		return false
 	}
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("X-Auth-Token", s.apiKey)
+	req.Header.Set("X-Auth-Token", apiKey)
 	resp, err := s.client.Do(req)
 	if err != nil {
 		slog.ErrorContext(ctx, "cwcloud email api is not available", "error", err, "to", to, "subject", subject)

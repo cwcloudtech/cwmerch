@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { usePermalinks } from "../lib/permalinks";
 import { toast } from "react-toastify";
 import { FiShoppingBag } from "react-icons/fi";
 import Price from "./Price";
@@ -7,6 +8,7 @@ import { useCart } from "../context/CartContext";
 import { useI18n } from "../i18n/I18nContext";
 
 const ProductCard = ({ product }) => {
+  const links = usePermalinks();
   const { addItem } = useCart();
   const { t } = useI18n();
   const image = product.images?.[0];
@@ -19,14 +21,14 @@ const ProductCard = ({ product }) => {
 
   return (
     <article className="product-card">
-      <Link to={`/product/${product.slug || product.id}`} className="product-card-media">
+      <Link to={links.product(product)} className="product-card-media">
         {image ? <img src={image.src} alt={image.alt || product.name} loading="lazy" /> : <div className="img-placeholder" aria-hidden="true" />}
         {product.onSale && <span className="sale-flash">{t("product.sale")}</span>}
         {product.stockStatus === "outofstock" && <span className="oos-flash">{t("product.outOfStock")}</span>}
       </Link>
       <div className="product-card-body">
         <h3 className="product-card-title">
-          <Link to={`/product/${product.slug || product.id}`}>{product.name}</Link>
+          <Link to={links.product(product)}>{product.name}</Link>
         </h3>
         {Number(product.ratingCount) > 0 && <Stars rating={product.averageRating} count={product.ratingCount} />}
         <Price item={product} />
@@ -41,7 +43,7 @@ const ProductCard = ({ product }) => {
             {product.buttonText || t("product.buy")}
           </a>
         ) : (
-          <Link className="btn btn-secondary btn-sm btn-block" to={`/product/${product.slug || product.id}`}>
+          <Link className="btn btn-secondary btn-sm btn-block" to={links.product(product)}>
             {product.type === "variable" ? t("product.selectOptions") : t("product.viewProduct")}
           </Link>
         )}

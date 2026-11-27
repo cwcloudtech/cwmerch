@@ -80,10 +80,12 @@ type Variation struct {
 
 // Product is a WooCommerce product.
 type Product struct {
-	ID                uint64             `json:"id"`
-	Name              string             `json:"name"`
-	Slug              string             `json:"slug"`
-	Permalink         string             `json:"permalink"`
+	ID        uint64 `json:"id"`
+	Name      string `json:"name"`
+	Slug      string `json:"slug"`
+	Permalink string `json:"permalink"`
+	// Path is the product page's path, following WooCommerce's permalinks.
+	Path              string             `json:"path"`
 	Type              string             `json:"type"`
 	Status            string             `json:"status"`
 	Featured          bool               `json:"featured"`
@@ -288,6 +290,13 @@ func (s *Store) hydrate(ctx context.Context, rows []postRow, withVariations bool
 		}
 	}
 	at := time.Now().UTC()
+	pl := s.Permalinks(ctx)
+	var catPaths map[uint64]string
+	if pl.ProductCategoryInPath {
+		if catPaths, _, err = s.termPaths(ctx, TaxCategory); err != nil {
+			return nil, err
+		}
+	}
 	out := make([]Product, 0, len(rows))
 	children := map[uint64][]uint64{}
 	if children, err = s.variationIDs(ctx, ids); err != nil {
@@ -357,7 +366,8 @@ func (s *Store) hydrate(ctx context.Context, rows []postRow, withVariations bool
 			p.Price = m.Float("_price")
 		}
 		p.PriceMin, p.PriceMax = p.Price, p.Price
-		p.Permalink = s.SiteURL + "/product/" + p.Slug
+		p.Path = pl.productPath(p.Slug, p.Categories, catPaths)
+		p.Permalink = s.SiteURL + p.Path
 		out = append(out, p)
 	}
 	// variable products: prices/stock come from their variations

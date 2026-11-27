@@ -1,4 +1,6 @@
 import { NavLink, useParams } from "react-router-dom";
+import CWCloudTab from "./CWCloudTab";
+import PermalinksTab from "./PermalinksTab";
 import { useI18n } from "../../../i18n/I18nContext";
 import { PageHead } from "../../../components/admin";
 import OptionsTab from "./OptionsTab";
@@ -10,7 +12,7 @@ import ShopTab from "./ShopTab";
 import InvoicingTab from "./InvoicingTab";
 
 export const OPTION_TABS = ["general", "products", "accounts", "advanced"];
-const TABS = [OPTION_TABS[0], "shop", OPTION_TABS[1], "tax", "shipping", "payments", "invoicing", OPTION_TABS[2], "emails", OPTION_TABS[3]];
+const TABS = [OPTION_TABS[0], "shop", OPTION_TABS[1], "tax", "shipping", "payments", "invoicing", OPTION_TABS[2], "emails", "cwcloud", "permalinks", OPTION_TABS[3]];
 
 const Settings = () => {
   const { tab: rawTab } = useParams();
@@ -33,6 +35,8 @@ const Settings = () => {
       {tab === "emails" && <EmailsTab />}
       {tab === "shop" && <ShopTab />}
       {tab === "invoicing" && <InvoicingTab />}
+      {tab === "cwcloud" && <CWCloudTab />}
+      {tab === "permalinks" && <PermalinksTab />}
     </div>
   );
 };

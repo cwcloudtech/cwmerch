@@ -77,12 +77,13 @@ type ShopSettings struct {
 	ShopEnabled          bool             `json:"shopEnabled"`
 	// PhoneConfirmation: no online payment partner is configured, so an
 	// order is confirmed by phone (the phone number is required at checkout).
-	PhoneConfirmation   bool     `json:"phoneConfirmation"`
-	ClosedMessage       string   `json:"closedMessage"`
-	RegistrationEnabled bool     `json:"registrationEnabled"`
-	Languages           []string `json:"languages"`
-	DefaultLanguage     string   `json:"defaultLanguage"`
-	Version             string   `json:"version"`
+	PhoneConfirmation   bool       `json:"phoneConfirmation"`
+	ClosedMessage       string     `json:"closedMessage"`
+	RegistrationEnabled bool       `json:"registrationEnabled"`
+	Languages           []string   `json:"languages"`
+	Permalinks          Permalinks `json:"permalinks"`
+	DefaultLanguage     string     `json:"defaultLanguage"`
+	Version             string     `json:"version"`
 }
 
 // Decimals is the shop's price precision.
@@ -193,6 +194,7 @@ func (s *Store) ShopSettings(ctx context.Context) ShopSettings {
 	sc := s.ShopConfig(ctx)
 	set.ShopEnabled, set.ClosedMessage, set.RegistrationEnabled = sc.ShopEnabled, sc.ClosedMessage, sc.RegistrationEnabled
 	set.Languages, set.DefaultLanguage = sc.Languages, sc.DefaultLanguage
+	set.Permalinks = s.Permalinks(ctx)
 	if !calc {
 		set.TaxDisplayShop, set.TaxDisplayCart = "excl", "excl"
 	}

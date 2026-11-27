@@ -6,8 +6,7 @@ import { Spinner } from "./components/ui";
 import { useAuth } from "./context/AuthContext";
 import { useI18n } from "./i18n/I18nContext";
 import Home from "./pages/shop/Home";
-import Catalogue from "./pages/shop/Catalogue";
-import Product from "./pages/shop/Product";
+import StorefrontRoute from "./pages/shop/StorefrontRoute";
 import Cart from "./pages/shop/Cart";
 import Checkout from "./pages/shop/Checkout";
 import OrderReceived from "./pages/shop/OrderReceived";
@@ -15,7 +14,6 @@ import Payment from "./pages/shop/Payment";
 import Contact from "./pages/shop/Contact";
 import ForgotPassword from "./pages/shop/ForgotPassword";
 import ResetPassword from "./pages/shop/ResetPassword";
-import NotFound from "./pages/shop/NotFound";
 import AccountLayout from "./pages/account/AccountLayout";
 import AccountDashboard from "./pages/account/Dashboard";
 import { Downloads, Orders as MyOrders, ViewOrder } from "./pages/account/Orders";
@@ -43,10 +41,6 @@ const App = () => {
           <Route path="/admin/*" element={<Admin />} />
           <Route element={<ShopLayout />}>
             <Route index element={<Home />} />
-            <Route path="shop" element={<Catalogue mode="shop" />} />
-            <Route path="product-category/:slug" element={<Catalogue mode="category" />} />
-            <Route path="product-tag/:slug" element={<Catalogue mode="tag" />} />
-            <Route path="product/:slug" element={<Product />} />
             <Route path="cart" element={<Cart />} />
             <Route path="checkout" element={<Checkout />} />
             <Route path="checkout/order-received/:id" element={<OrderReceived />} />
@@ -74,7 +68,8 @@ const App = () => {
               <Route path="api-keys" element={<ApiKeys />} />
               <Route path="assistant" element={<Assistant embedded />} />
             </Route>
-            <Route path="*" element={<NotFound />} />
+            {/* Shop, product, category and tag pages follow WooCommerce's permalinks. */}
+            <Route path="*" element={<StorefrontRoute />} />
           </Route>
         </Routes>
       </Suspense>

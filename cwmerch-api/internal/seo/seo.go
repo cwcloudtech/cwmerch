@@ -95,15 +95,16 @@ func (r *Renderer) Page(ctx context.Context, rawPath string) Head {
 		}
 		return map[string]any{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": list}
 	}
-	parts := strings.Split(strings.Trim(path, "/"), "/")
+	pl := r.woo.Permalinks(ctx)
+	kind, ref := pl.RouteKind(path)
 	switch {
-	case path == "/" || path == "":
+	case kind == "home":
 		h.JSONLD = []any{org, map[string]any{"@context": "https://schema.org", "@type": "WebSite", "name": shop, "url": r.publicUI + "/",
-			"potentialAction": map[string]any{"@type": "SearchAction", "target": r.publicUI + "/shop?search={search_term_string}", "query-input": "required name=search_term_string"}}}
+			"potentialAction": map[string]any{"@type": "SearchAction", "target": r.publicUI + pl.ShopPath() + "?search={search_term_string}", "query-input": "required name=search_term_string"}}}
 		if len(app.Banner.Slides) > 0 && app.Banner.Slides[0].Image != "" && h.Image == "" {
 			h.Image = app.Banner.Slides[0].Image
 		}
-	case parts[0] == "shop":
+	case kind == "shop":
 		h.Title = titleOf("Shop", shop)
 		switch lang {
 		case "fr":
@@ -111,13 +112,14 @@ func (r *Renderer) Page(ctx context.Context, rawPath string) Head {
 		case "ar":
 			h.Title = titleOf("المتجر", shop)
 		}
-		h.JSONLD = []any{crumbs([2]string{shop, "/"}, [2]string{"Shop", "/shop"})}
-	case (parts[0] == "product-category" || parts[0] == "product-tag") && len(parts) > 1:
+		h.Canonical = r.publicUI + pl.ShopPath()
+		h.JSONLD = []any{crumbs([2]string{shop, "/"}, [2]string{h.Title, pl.ShopPath()})}
+	case kind == "category" || kind == "tag":
 		tax := woo.TaxCategory
-		if parts[0] == "product-tag" {
+		if kind == "tag" {
 			tax = woo.TaxTag
 		}
-		t, err := r.woo.TermBySlug(ctx, tax, parts[len(parts)-1])
+		t, err := r.woo.TermBySlug(ctx, tax, ref)
 		if err != nil {
 			h.NoIndex = true
 			break
@@ -129,9 +131,10 @@ func (r *Renderer) Page(ctx context.Context, rawPath string) Head {
 		if t.Image != nil {
 			h.Image = t.Image.Src
 		}
-		h.JSONLD = []any{crumbs([2]string{shop, "/"}, [2]string{t.Name, path})}
-	case parts[0] == "product" && len(parts) > 1:
-		p, err := r.woo.PublicProduct(ctx, parts[1])
+		h.Canonical = r.publicUI + t.Path
+		h.JSONLD = []any{crumbs([2]string{shop, "/"}, [2]string{t.Name, t.Path})}
+	case kind == "product":
+		p, err := r.woo.PublicProduct(ctx, ref)
 		if err != nil {
 			h.NoIndex, h.Title = true, titleOf("Not found", shop)
 			break
@@ -143,17 +146,17 @@ func (r *Renderer) Page(ctx context.Context, rawPath string) Head {
 		}
 		h.Description = PlainText(desc, 160)
 		h.Type = "product"
-		h.Canonical = r.publicUI + "/product/" + p.Slug
+		h.Canonical = r.publicUI + p.Path
 		if len(p.Images) > 0 {
 			h.Image = p.Images[0].Src
 		}
 		h.NoIndex = p.CatalogVisibility == "hidden"
-		h.JSONLD = []any{r.productLD(ctx, p), crumbsFor(p, shop, r.publicUI)}
+		h.JSONLD = []any{r.productLD(ctx, p), r.crumbsFor(ctx, p, shop)}
 		cur := r.woo.Currency(ctx)
 		h.Extra = map[string]string{"product:price:amount": fmt.Sprintf("%.2f", p.Price), "product:price:currency": cur,
 			"og:price:amount": fmt.Sprintf("%.2f", p.Price), "og:price:currency": cur,
 			"product:availability": map[bool]string{true: "in stock", false: "out of stock"}[p.StockStatus != "outofstock"]}
-	case parts[0] == "contact":
+	case strings.Trim(path, "/") == "contact":
 		h.Title = titleOf("Contact", shop)
 	default:
 		// account, cart, checkout, admin, assistant...: not for search engines
@@ -173,13 +176,15 @@ func titleOf(page, shop string) string {
 	return page + " – " + shop
 }
 
-func crumbsFor(p woo.Product, shop, base string) map[string]any {
+func (r *Renderer) crumbsFor(ctx context.Context, p woo.Product, shop string) map[string]any {
+	base := r.publicUI
 	list := []any{map[string]any{"@type": "ListItem", "position": 1, "name": shop, "item": base + "/"}}
 	if len(p.Categories) > 0 {
-		c := p.Categories[0]
-		list = append(list, map[string]any{"@type": "ListItem", "position": 2, "name": c.Name, "item": base + "/product-category/" + c.Slug})
+		if t, err := r.woo.Term(ctx, woo.TaxCategory, p.Categories[0].ID); err == nil {
+			list = append(list, map[string]any{"@type": "ListItem", "position": 2, "name": t.Name, "item": base + t.Path})
+		}
 	}
-	list = append(list, map[string]any{"@type": "ListItem", "position": len(list) + 1, "name": p.Name, "item": base + "/product/" + p.Slug})
+	list = append(list, map[string]any{"@type": "ListItem", "position": len(list) + 1, "name": p.Name, "item": base + p.Path})
 	return map[string]any{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": list}
 }
 
@@ -196,7 +201,7 @@ func (r *Renderer) productLD(ctx context.Context, p woo.Product) map[string]any 
 		availability = "https://schema.org/BackOrder"
 	}
 	cur := r.woo.Currency(ctx)
-	url := r.publicUI + "/product/" + p.Slug
+	url := r.publicUI + p.Path
 	var offers any = map[string]any{"@type": "Offer", "price": fmt.Sprintf("%.2f", p.Price), "priceCurrency": cur, "availability": availability, "url": url}
 	if p.Type == "variable" && p.PriceMin != p.PriceMax {
 		offers = map[string]any{"@type": "AggregateOffer", "lowPrice": fmt.Sprintf("%.2f", p.PriceMin), "highPrice": fmt.Sprintf("%.2f", p.PriceMax),
@@ -333,19 +338,16 @@ type sURL struct {
 // Sitemap lists the home, shop, categories, tags and every visible product.
 func (r *Renderer) Sitemap(ctx context.Context) ([]byte, error) {
 	set := urlset{NS: "http://www.sitemaps.org/schemas/sitemap/0.9"}
-	set.URLs = append(set.URLs, sURL{Loc: r.publicUI + "/"}, sURL{Loc: r.publicUI + "/shop"})
+	pl := r.woo.Permalinks(ctx)
+	set.URLs = append(set.URLs, sURL{Loc: r.publicUI + "/"}, sURL{Loc: r.publicUI + pl.ShopPath()})
 	for _, tax := range []string{woo.TaxCategory, woo.TaxTag} {
 		terms, err := r.woo.Terms(ctx, tax)
 		if err != nil {
 			return nil, err
 		}
-		prefix := "/product-category/"
-		if tax == woo.TaxTag {
-			prefix = "/product-tag/"
-		}
 		for _, t := range terms {
-			if t.Count > 0 {
-				set.URLs = append(set.URLs, sURL{Loc: r.publicUI + prefix + t.Slug})
+			if t.Count > 0 && t.Path != "" {
+				set.URLs = append(set.URLs, sURL{Loc: r.publicUI + t.Path})
 			}
 		}
 	}
@@ -355,7 +357,7 @@ func (r *Renderer) Sitemap(ctx context.Context) ([]byte, error) {
 			return nil, err
 		}
 		for _, p := range res.Items {
-			set.URLs = append(set.URLs, sURL{Loc: r.publicUI + "/product/" + p.Slug, LastMod: p.UpdatedAt.Format("2006-01-02")})
+			set.URLs = append(set.URLs, sURL{Loc: r.publicUI + p.Path, LastMod: p.UpdatedAt.Format("2006-01-02")})
 		}
 		if page >= res.TotalPages {
 			break

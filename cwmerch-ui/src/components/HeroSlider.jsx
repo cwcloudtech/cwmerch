@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { usePermalinks } from "../lib/permalinks";
 import { Link } from "react-router-dom";
 import { FiChevronLeft, FiChevronRight } from "react-icons/fi";
 import { useI18n } from "../i18n/I18nContext";
@@ -6,16 +7,18 @@ import { useI18n } from "../i18n/I18nContext";
 const prefersReducedMotion = () =>
   typeof window !== "undefined" && window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-const CtaLink = ({ href, children }) =>
-  /^https?:\/\//i.test(href) ? (
+const CtaLink = ({ href, children }) => {
+  const links = usePermalinks();
+  return /^https?:\/\//i.test(href) ? (
     <a className="btn btn-primary btn-lg" href={href}>
       {children}
     </a>
   ) : (
-    <Link className="btn btn-primary btn-lg" to={href || "/shop"}>
+    <Link className="btn btn-primary btn-lg" to={href || links.shop}>
       {children}
     </Link>
   );
+};
 
 // HeroSlider is the home banner: autoplay (paused on hover/focus and when the
 // user prefers reduced motion), arrows, dots and touch swipe.

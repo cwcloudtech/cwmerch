@@ -103,7 +103,7 @@ func callerID(r *http.Request) uint64 {
 // Settings is GET /v1/shop/settings.
 func (h *ShopHandler) Settings(w http.ResponseWriter, r *http.Request) {
 	set := h.woo.ShopSettings(r.Context())
-	set.ContactEnabled = h.contactEnabled
+	set.ContactEnabled = h.contactEnabled || h.woo.CWCloudSettings(r.Context()).ContactMode != "disabled"
 	if h.oidcProviders != nil {
 		set.OIDCProviders = h.oidcProviders()
 	}
@@ -586,7 +586,7 @@ func (h *ShopHandler) SEOHTML(w http.ResponseWriter, r *http.Request) {
 	}
 	head := h.seo.Page(r.Context(), path)
 	status := http.StatusOK
-	if strings.HasPrefix(path, "/product/") && head.NoIndex && strings.Contains(head.Title, "Not found") {
+	if kind, _ := h.woo.Permalinks(r.Context()).RouteKind(path); kind == "product" && head.NoIndex && strings.Contains(head.Title, "Not found") {
 		status = http.StatusNotFound
 	}
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")

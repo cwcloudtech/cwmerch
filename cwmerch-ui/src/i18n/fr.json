@@ -853,7 +853,9 @@
       "emails": "E-mails",
       "advanced": "Avancé",
       "shop": "Boutique",
-      "invoicing": "Facturation"
+      "invoicing": "Facturation",
+      "cwcloud": "E-mails & contact (CWCloud)",
+      "permalinks": "Permaliens"
     }
   },
   "tax": {
@@ -1327,5 +1329,54 @@
     "willCall": "Nous vous appellerons au {{phone}} pour confirmer votre commande.",
     "willCallNoPhone": "Nous vous appellerons pour confirmer votre commande.",
     "keepNumber": "Conservez ce numéro : il identifie votre commande lors de notre appel."
+  },
+  "permalinks": {
+    "title": "Permaliens",
+    "intro": "Adresses des produits, catégories et étiquettes, partagées avec WordPress (WooCommerce → Réglages → Permaliens) : les pages gardent la même adresse sur cwmerch et WordPress.",
+    "shopPage": "Page boutique : {{path}} (le slug de la page boutique WooCommerce).",
+    "presets": {
+      "shopBase": "Base boutique",
+      "shopCategory": "Base boutique avec catégorie"
+    },
+    "productBase": "Base des produits",
+    "productBaseHint": "Exemple : {{example}}. Utilisez %product_cat% pour mettre la catégorie dans l'URL.",
+    "categoryBase": "Base des catégories",
+    "tagBase": "Base des étiquettes",
+    "attributeBase": "Base des attributs",
+    "wordpressNotice": "Enregistré dans l'option woocommerce_permalinks de WordPress ; WordPress régénère ses règles de réécriture à sa prochaine requête."
+  },
+  "cwcloud": {
+    "title": "E-mails CWCloud",
+    "intro": "La clé d'API CWCloud utilisée pour envoyer les e-mails. Elle est stockée dans WordPress (option cwcloud-api-secret), partagée avec le plugin WordPress CWCloud.",
+    "apiUrl": "URL de l'API CWCloud",
+    "apiKey": "Clé d'API CWCloud",
+    "apiKeyStored": "•••••••• (enregistrée, laisser vide pour la garder)",
+    "apiKeyMissing": "Aucune clé : les e-mails ne sont pas envoyés.",
+    "apiKeySource": {
+      "wordpress": "Stockée dans WordPress (partagée avec le plugin CWCloud).",
+      "env": "Issue de la variable d'environnement CWCLOUD_API_KEY ; enregistrer une clé ici la remplace."
+    },
+    "clearKey": "Supprimer la clé enregistrée",
+    "emailFrom": "E-mail d'expédition",
+    "emailFromHint": "L'adresse « De » de WooCommerce (woocommerce_email_from_address).",
+    "testTo": "Envoyer un e-mail de test à",
+    "sendTest": "Envoyer le test",
+    "testSent": "E-mail de test envoyé à {{to}}",
+    "testFailed": "L'e-mail de test n'a pas pu être envoyé",
+    "contactTitle": "Formulaire de contact",
+    "contactMode": {
+      "contactreq": "Les messages sont envoyés au formulaire de contact CWCloud ci-dessous.",
+      "email": "Pas de formulaire de contact CWCloud : les messages sont envoyés par e-mail au destinataire ci-dessous.",
+      "disabled": "Le formulaire de contact est désactivé : renseignez une clé d'API CWCloud ou un id de formulaire."
+    },
+    "contactFormId": "Id du formulaire de contact CWCloud",
+    "contactFormIdHint": "Facultatif. Vide : les messages sont envoyés par e-mail au destinataire.",
+    "contactRecipient": "Destinataire",
+    "contactSubject": "Préfixe du sujet",
+    "recipientSource": {
+      "contact-form-7": "Issu du formulaire Contact Form 7 « {{form}} » (enregistré là).",
+      "option": "Enregistré dans les options WordPress.",
+      "admin_email": "Par défaut, l'e-mail administrateur de WordPress."
+    }
   }
 }

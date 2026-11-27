@@ -84,6 +84,9 @@ func shopDocs() map[string]openapi.EndpointDoc {
 		"PUT /v1/admin/appearance/":                              body(woo.Appearance{}),
 
 		// --- shop switch, online payments, invoices ---
+		"PUT /v1/admin/cwcloud-settings":                 body(woo.CWCloudSettingsInput{}),
+		"POST /v1/admin/cwcloud-settings/test-email":     body(testEmailPayload{}),
+		"PUT /v1/admin/permalinks":                       body(woo.PermalinksInput{}),
 		"PUT /v1/admin/shop-config":                      body(woo.ShopConfig{}),
 		"PUT /v1/admin/payment-providers/{id}":           body(payments.ProviderUpdate{}),
 		"GET /v1/shop/orders/{id}/payment":               q(openapi.Param{Name: "key", Required: true}),

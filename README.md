@@ -183,6 +183,22 @@ Sign in with your WordPress administrator or shop manager account (same email or
 password), add an AI subscription (`POST /v1/ai/connections/`) and chat (`POST /v1/ai/chat`) — or plug it
 into CWCloud as a CWAI external adapter (`POST /v1/ai/cwcloud/adapter` with an `X-Api-Key`).
 
+## Permalinks
+
+Product, category, tag and shop pages have **the same addresses as on WordPress**: cwmerch reads
+WooCommerce's permalinks (`woocommerce_permalinks`, including `%product_cat%` bases and hierarchical
+categories) and the shop page slug, with WooCommerce's localized defaults (`/produit/…` on a French
+WordPress). *Settings → Permalinks* edits them in the same option (WordPress rebuilds its rewrite rules).
+The UI resolves the paths dynamically, and nginx sends every non-file, non-app path to the API's SEO
+renderer.
+
+## Emails and contact form
+
+*Settings → Emails & contact (CWCloud)*: the CWCloud API key is stored in WordPress' `cwcloud-api-secret`
+option, shared with the CWCloud WordPress plugin (it wins over `CWCLOUD_API_KEY`), with a test email
+button. The contact form goes to a CWCloud contact form when an id is set, else it is emailed to the
+recipient read from Contact Form 7 (or WordPress' admin email), editable from the same screen.
+
 ## Shop switch: cwmerch as an internal information system
 
 *Administration → Settings → Shop*: with the public shop off, the storefront endpoints answer 403

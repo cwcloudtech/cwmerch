@@ -319,3 +319,37 @@ When no online payment partner (Stripe, Konnect, Flouci) is enabled and configur
 * Customer emails follow WordPress' `WPLANG` when set, else the shop's default language (Arabic emails are
   right-to-left). PDF exports are never Arabic: invoices are English or French (`locale` en/fr), the
   accounting exports French.
+
+### Permalinks (same URLs as WordPress / WooCommerce)
+
+Product, category, tag and shop pages use WooCommerce's permalinks (option `woocommerce_permalinks`, set in
+WordPress → Settings → Permalinks, and the slug of the `woocommerce_shop_page_id` page). Unset bases fall
+back to WooCommerce's localized defaults (`product`/`product-category`/`product-tag`/`shop`, French:
+`produit`/`categorie-produit`/`etiquette-produit`/`boutique`).
+
+* `GET /v1/shop/settings` carries `"permalinks": {"productBase":"produit","categoryBase":"categorie-produit","tagBase":"etiquette-produit","attributeBase":"","shopBase":"boutique","productCategoryInPath":false}`.
+* Products carry `path` (`/produit/bouquet-de-roses`; with `%product_cat%` in the base, the full path of the
+  product's category with the lowest id like WooCommerce, `uncategorized` when none) and `permalink`
+  (site URL + path). Categories and tags carry `path` (`/categorie-produit/parent/child`).
+* `GET /v1/shop/categories/{slug}` also accepts a hierarchical `parent/child` path.
+* `GET /v1/seo/html?path=…` resolves any of those paths (and the sitemap lists them).
+* `GET /v1/admin/permalinks` / `PUT /v1/admin/permalinks` `{"productBase":"boutique/%product_cat%","categoryBase":"rayon","tagBase":"mot-cle","attributeBase":""}`
+  (manager): writes `woocommerce_permalinks` like WooCommerce and deletes WordPress' `rewrite_rules` option so
+  WordPress rebuilds its rules. Bases are required and must differ (400 `errors.invalidPermalinks`).
+
+### CWCloud emails and contact form (stored in WordPress)
+
+* `GET /v1/admin/cwcloud-settings` (manager) →
+  `{"apiUrl","apiKeySet","apiKeySource":"wordpress|env|","contactFormId","contactRecipient","recipientSource":"contact-form-7|option|admin_email","contactSubject","contactForm7Id","contactForm7","emailFrom","contactMode":"contactreq|email|disabled"}`.
+  The key is never returned.
+* `PUT /v1/admin/cwcloud-settings` `{"apiUrl","apiKey","clearApiKey","contactFormId","contactRecipient","contactSubject","emailFrom"}`
+  (all optional; a blank `apiKey` keeps the stored one). The key goes to WordPress' `cwcloud-api-secret` option,
+  the one of the CWCloud WordPress plugin (`cwcloud-api-url`, `cwcloud-contact-form-id` next to it); the
+  WordPress options win over `CWCLOUD_API_*` / `CWCLOUD_CONTACT_FORM_ID`. The recipient and subject are saved in
+  the Contact Form 7 form (`wpcf7_contact_form` post, `_mail` meta) when there is one, else in the options
+  `cwmerch_contact_recipient` / `cwmerch_contact_subject`; default recipient: WordPress' `admin_email`.
+  `emailFrom` is `woocommerce_email_from_address`.
+* `POST /v1/admin/cwcloud-settings/test-email` `{"to":"me@example.com"}` → `{"sent":true|false}`.
+* `POST /v1/contact`: with a CWCloud contact form id, forwarded to it (`contactreq`); without one but with
+  an API key, emailed to the recipient with the visitor as reply-to (`email`); else 405
+  `errors.contactFormNotConfigured`. `GET /v1/shop/settings` `contactEnabled` follows.

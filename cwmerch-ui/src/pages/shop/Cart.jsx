@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { usePermalinks } from "../../lib/permalinks";
 import { Link } from "react-router-dom";
 import { FiTrash2 } from "react-icons/fi";
 import { useCart } from "../../context/CartContext";
@@ -158,6 +159,7 @@ const ShippingCalculator = () => {
 };
 
 const Cart = () => {
+  const links = usePermalinks();
   const { items, cart, pricing, error, setQuantity, removeItem, applyCoupon, removeCoupon, setShippingMethod } = useCart();
   const { settings, money, cartIncl, shopName } = useShop();
   const { t } = useI18n();
@@ -169,7 +171,7 @@ const Cart = () => {
       <div className="container">
         <h1>{t("cart.title")}</h1>
         <Empty title={t("cart.empty")} body={t("cart.emptyBody")}>
-          <Link to="/shop" className="btn btn-primary">
+          <Link to={links.shop} className="btn btn-primary">
             {t("cart.returnToShop")}
           </Link>
         </Empty>
@@ -213,7 +215,7 @@ const Cart = () => {
                         <div className="cart-product">
                           {line.image ? <img src={line.image} alt="" width="56" height="56" /> : <span className="img-placeholder thumb-sm" aria-hidden="true" />}
                           <div>
-                            <Link to={`/product/${line.productId}`}>{line.name}</Link>
+                            <Link to={links.product(line.productId)}>{line.name}</Link>
                             {(line.attributes || []).length > 0 && (
                               <ul className="item-meta">
                                 {line.attributes.map((a) => (

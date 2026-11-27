@@ -49,7 +49,10 @@ type Term struct {
 	Image       *Image `json:"image"`
 	MenuOrder   int    `json:"menuOrder"`
 	DisplayType string `json:"displayType,omitempty"`
-	taxonomyID  uint64
+	// Path is the term's storefront page, following WooCommerce's permalinks
+	// (categories are hierarchical: /product-category/parent/child).
+	Path       string `json:"path,omitempty"`
+	taxonomyID uint64
 }
 
 var nonSlug = regexp.MustCompile(`[^a-z0-9-]+`)
@@ -113,7 +116,34 @@ func (s *Store) setTermMeta(ctx context.Context, q db.Querier, termID uint64, ke
 
 // Terms lists a taxonomy's terms (ordered by the "order" term meta, then name).
 func (s *Store) Terms(ctx context.Context, taxonomy string) ([]Term, error) {
-	return s.termsWhere(ctx, "tt.taxonomy = ?", taxonomy)
+	terms, err := s.termsWhere(ctx, "tt.taxonomy = ?", taxonomy)
+	if err != nil || (taxonomy != TaxCategory && taxonomy != TaxTag) {
+		return terms, err
+	}
+	pl := s.Permalinks(ctx)
+	byID := map[uint64]Term{}
+	for _, t := range terms {
+		byID[t.ID] = t
+	}
+	for i := range terms {
+		if taxonomy == TaxTag {
+			terms[i].Path = pl.TagPath(terms[i].Slug)
+			continue
+		}
+		segs := []string{terms[i].Slug}
+		seen := map[uint64]bool{terms[i].ID: true}
+		for p := terms[i].Parent; p != 0 && !seen[p]; {
+			pt, ok := byID[p]
+			if !ok {
+				break
+			}
+			seen[p] = true
+			segs = append([]string{pt.Slug}, segs...)
+			p = pt.Parent
+		}
+		terms[i].Path = pl.CategoryPath(strings.Join(segs, "/"))
+	}
+	return terms, nil
 }
 
 func (s *Store) termsWhere(ctx context.Context, where string, args ...any) ([]Term, error) {
@@ -180,26 +210,35 @@ func sortTerms(terms []Term) {
 
 // Term is one term of a taxonomy by id.
 func (s *Store) Term(ctx context.Context, taxonomy string, id uint64) (Term, error) {
-	terms, err := s.termsWhere(ctx, "tt.taxonomy = ? AND t.term_id = ?", taxonomy, id)
+	terms, err := s.Terms(ctx, taxonomy)
 	if err != nil {
 		return Term{}, err
 	}
-	if len(terms) == 0 {
-		return Term{}, ErrNotFound
+	for _, t := range terms {
+		if t.ID == id {
+			return t, nil
+		}
 	}
-	return terms[0], nil
+	return Term{}, ErrNotFound
 }
 
 // TermBySlug is one term of a taxonomy by slug.
+// TermBySlug accepts a slug or a hierarchical path ("parent/child").
 func (s *Store) TermBySlug(ctx context.Context, taxonomy, slug string) (Term, error) {
-	terms, err := s.termsWhere(ctx, "tt.taxonomy = ? AND t.slug = ?", taxonomy, slug)
+	slug = strings.Trim(slug, "/")
+	if i := strings.LastIndex(slug, "/"); i >= 0 {
+		slug = slug[i+1:]
+	}
+	terms, err := s.Terms(ctx, taxonomy)
 	if err != nil {
 		return Term{}, err
 	}
-	if len(terms) == 0 {
-		return Term{}, ErrNotFound
+	for _, t := range terms {
+		if t.Slug == slug {
+			return t, nil
+		}
 	}
-	return terms[0], nil
+	return Term{}, ErrNotFound
 }
 
 // TermInput is a term create/update.

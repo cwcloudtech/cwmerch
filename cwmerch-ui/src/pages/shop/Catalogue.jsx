@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams, useSearchParams } from "react-router-dom";
+import { usePermalinks } from "../../lib/permalinks";
+import { Link, useSearchParams } from "react-router-dom";
 import { api, asArray, normalizePaged } from "../../api/client";
 import { useAsync } from "../../lib/useAsync";
 import { useSeo } from "../../lib/seo";
@@ -14,13 +15,14 @@ const PER_PAGE = 12;
 const SORTS = ["menu_order", "popularity", "rating", "date", "price", "price-desc"];
 
 const CategoryTree = ({ categories, active, parent = 0, depth = 0 }) => {
+  const links = usePermalinks();
   const children = categories.filter((c) => Number(c.parent || 0) === Number(parent));
   if (children.length === 0) return null;
   return (
     <ul className={depth ? "cat-tree-sub" : "cat-tree"}>
       {children.map((c) => (
         <li key={c.id}>
-          <Link to={`/product-category/${c.slug}`} className={active === c.slug ? "is-active" : ""} aria-current={active === c.slug ? "page" : undefined}>
+          <Link to={links.category(c)} className={active === c.slug ? "is-active" : ""} aria-current={active === c.slug ? "page" : undefined}>
             {c.name} <small className="muted">({c.count || 0})</small>
           </Link>
           <CategoryTree categories={categories} active={active} parent={c.id} depth={depth + 1} />
@@ -30,8 +32,8 @@ const CategoryTree = ({ categories, active, parent = 0, depth = 0 }) => {
   );
 };
 
-const Catalogue = ({ mode = "shop" }) => {
-  const { slug } = useParams();
+const Catalogue = ({ mode = "shop", slug }) => {
+  const links = usePermalinks();
   const [params, setParams] = useSearchParams();
   const { categories, shopName, money } = useShop();
   const { t } = useI18n();
@@ -90,7 +92,7 @@ const Catalogue = ({ mode = "shop" }) => {
 
   const title = currentCategory ? currentCategory.name : currentTag ? currentTag.name : search ? t("shop.resultsFor", { search }) : t("shop.title");
   const crumbs = useMemo(() => {
-    const list = [{ label: t("nav.shop"), to: "/shop" }];
+    const list = [{ label: t("nav.shop"), to: links.shop }];
     if (currentCategory) {
       const chain = [];
       let c = currentCategory;
@@ -99,11 +101,11 @@ const Catalogue = ({ mode = "shop" }) => {
         const parentId = Number(c.parent || 0);
         c = parentId ? categories.find((x) => Number(x.id) === parentId) : null;
       }
-      chain.forEach((x) => list.push({ label: x.name, to: `/product-category/${x.slug}` }));
+      chain.forEach((x) => list.push({ label: x.name, to: links.category(x) }));
     } else if (currentTag) list.push({ label: currentTag.name });
     else if (search) list.push({ label: title });
     return list;
-  }, [currentCategory, currentTag, categories, search, title, t]);
+  }, [currentCategory, currentTag, categories, search, title, t, links]);
 
   useSeo({
     title: `${title} – ${shopName}`,
@@ -130,7 +132,7 @@ const Catalogue = ({ mode = "shop" }) => {
             <h2 className="filter-title">{t("shop.categories")}</h2>
             <ul className="cat-tree">
               <li>
-                <Link to="/shop" className={!category && mode === "shop" ? "is-active" : ""}>
+                <Link to={links.shop} className={!category && mode === "shop" ? "is-active" : ""}>
                   {t("shop.allProducts")}
                 </Link>
               </li>
@@ -173,7 +175,7 @@ const Catalogue = ({ mode = "shop" }) => {
               <h2 className="filter-title">{t("shop.tags")}</h2>
               <div className="tag-cloud">
                 {tags.map((x) => (
-                  <Link key={x.id} to={`/product-tag/${x.slug}`} className={`chip ${tag === x.slug ? "is-active" : ""}`}>
+                  <Link key={x.id} to={links.tag(x)} className={`chip ${tag === x.slug ? "is-active" : ""}`}>
                     {x.name}
                   </Link>
                 ))}
@@ -205,7 +207,7 @@ const Catalogue = ({ mode = "shop" }) => {
             <Spinner />
           ) : data.items.length === 0 ? (
             <Empty title={t("shop.noProducts")} body={t("shop.noProductsBody")}>
-              <Link to="/shop" className="btn btn-secondary">
+              <Link to={links.shop} className="btn btn-secondary">
                 {t("shop.allProducts")}
               </Link>
             </Empty>

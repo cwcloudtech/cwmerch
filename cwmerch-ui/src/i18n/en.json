@@ -853,7 +853,9 @@
       "emails": "Emails",
       "advanced": "Advanced",
       "shop": "Shop",
-      "invoicing": "Invoicing"
+      "invoicing": "Invoicing",
+      "cwcloud": "Emails & contact (CWCloud)",
+      "permalinks": "Permalinks"
     }
   },
   "tax": {
@@ -1327,5 +1329,54 @@
     "willCall": "We will call you at {{phone}} to confirm your order.",
     "willCallNoPhone": "We will call you to confirm your order.",
     "keepNumber": "Keep this number: it identifies your order when we call."
+  },
+  "permalinks": {
+    "title": "Permalinks",
+    "intro": "Product, category and tag URLs, shared with WordPress (WooCommerce → Settings → Permalinks): pages keep the same address on cwmerch and WordPress.",
+    "shopPage": "Shop page: {{path}} (the WooCommerce shop page slug).",
+    "presets": {
+      "shopBase": "Shop base",
+      "shopCategory": "Shop base with category"
+    },
+    "productBase": "Product base",
+    "productBaseHint": "Example: {{example}}. Use %product_cat% to put the category in the URL.",
+    "categoryBase": "Category base",
+    "tagBase": "Tag base",
+    "attributeBase": "Attribute base",
+    "wordpressNotice": "Saved in WordPress' woocommerce_permalinks option; WordPress rebuilds its rewrite rules on its next request."
+  },
+  "cwcloud": {
+    "title": "CWCloud emails",
+    "intro": "The CWCloud API key emails are sent with. It is stored in WordPress (option cwcloud-api-secret), shared with the CWCloud WordPress plugin.",
+    "apiUrl": "CWCloud API URL",
+    "apiKey": "CWCloud API key",
+    "apiKeyStored": "•••••••• (stored, leave blank to keep)",
+    "apiKeyMissing": "No key: emails are not sent.",
+    "apiKeySource": {
+      "wordpress": "Stored in WordPress (shared with the CWCloud plugin).",
+      "env": "From the CWCLOUD_API_KEY environment variable; saving a key here overrides it."
+    },
+    "clearKey": "Remove the stored key",
+    "emailFrom": "Sender email",
+    "emailFromHint": "WooCommerce's \"From\" address (woocommerce_email_from_address).",
+    "testTo": "Send a test email to",
+    "sendTest": "Send test",
+    "testSent": "Test email sent to {{to}}",
+    "testFailed": "The test email could not be sent",
+    "contactTitle": "Contact form",
+    "contactMode": {
+      "contactreq": "Messages go to the CWCloud contact form below.",
+      "email": "No CWCloud contact form: messages are emailed to the recipient below.",
+      "disabled": "The contact form is disabled: set a CWCloud API key or contact form id."
+    },
+    "contactFormId": "CWCloud contact form id",
+    "contactFormIdHint": "Optional. Empty: messages are emailed to the recipient.",
+    "contactRecipient": "Recipient",
+    "contactSubject": "Subject prefix",
+    "recipientSource": {
+      "contact-form-7": "From the Contact Form 7 form \"{{form}}\" (saved there).",
+      "option": "Saved in WordPress' options.",
+      "admin_email": "Defaults to the WordPress admin email."
+    }
   }
 }

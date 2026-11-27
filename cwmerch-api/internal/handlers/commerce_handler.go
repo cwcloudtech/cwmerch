@@ -8,6 +8,7 @@ import (
 
 	"github.com/go-chi/chi/v5"
 
+	"cwmerch-api/internal/email"
 	"cwmerch-api/internal/invoicing"
 	"cwmerch-api/internal/middleware"
 	"cwmerch-api/internal/models"
@@ -25,6 +26,13 @@ type CommerceHandler struct {
 	invoices *invoicing.Service
 	mailer   *wooemail.Mailer
 	users    *store.UserStore
+	sender   *email.Sender
+}
+
+// WithSender wires the raw email sender (test emails).
+func (h *CommerceHandler) WithSender(s *email.Sender) *CommerceHandler {
+	h.sender = s
+	return h
 }
 
 func NewCommerceHandler(w *woo.Store, p *payments.Service, inv *invoicing.Service, mailer *wooemail.Mailer, users *store.UserStore, audit *store.AuditStore) *CommerceHandler {
@@ -399,4 +407,70 @@ func (h *CommerceHandler) MyInvoice(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writePDF(w, invoicing.Filename(inv), pdf, false)
+}
+
+// Permalinks is GET /v1/admin/permalinks (WooCommerce's URL bases).
+func (h *CommerceHandler) Permalinks(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, http.StatusOK, h.woo.Permalinks(r.Context()))
+}
+
+// UpdatePermalinks is PUT /v1/admin/permalinks: writes woocommerce_permalinks
+// (WordPress serves the same URLs after rebuilding its rewrite rules).
+func (h *CommerceHandler) UpdatePermalinks(w http.ResponseWriter, r *http.Request) {
+	var in woo.PermalinksInput
+	if !decodeJSON(w, r, &in) {
+		return
+	}
+	pl, err := h.woo.SavePermalinks(r.Context(), in)
+	if err != nil {
+		writeWooError(w, err)
+		return
+	}
+	h.record(r, models.AuditSettingsUpdated, models.AuditSubjectSetting, "permalinks",
+		map[string]any{"productBase": pl.ProductBase, "categoryBase": pl.CategoryBase, "tagBase": pl.TagBase})
+	writeJSON(w, http.StatusOK, pl)
+}
+
+// CWCloudSettings is GET /v1/admin/cwcloud-settings: the email API key
+// (shared with the CWCloud WordPress plugin) and the contact form settings,
+// all read from WordPress' tables.
+func (h *CommerceHandler) CWCloudSettings(w http.ResponseWriter, r *http.Request) {
+	writeJSON(w, http.StatusOK, h.woo.CWCloudSettings(r.Context()))
+}
+
+func (h *CommerceHandler) UpdateCWCloudSettings(w http.ResponseWriter, r *http.Request) {
+	var in woo.CWCloudSettingsInput
+	if !decodeJSON(w, r, &in) {
+		return
+	}
+	set, err := h.woo.SaveCWCloudSettings(r.Context(), in)
+	if err != nil {
+		writeWooError(w, err)
+		return
+	}
+	h.record(r, models.AuditSettingsUpdated, models.AuditSubjectSetting, "cwcloud",
+		map[string]any{"apiKeyChanged": in.ClearAPIKey || (in.APIKey != nil && strings.TrimSpace(*in.APIKey) != ""), "contactMode": set.ContactMode})
+	writeJSON(w, http.StatusOK, set)
+}
+
+type testEmailPayload struct {
+	To string `json:"to"`
+}
+
+// TestEmail sends a test email with the configured CWCloud key.
+func (h *CommerceHandler) TestEmail(w http.ResponseWriter, r *http.Request) {
+	var p testEmailPayload
+	if !decodeJSON(w, r, &p) || !strings.Contains(p.To, "@") {
+		if !strings.Contains(p.To, "@") {
+			writeError(w, http.StatusBadRequest, "Please add a valid email", CodeInvalidEmail)
+		}
+		return
+	}
+	if h.mailer == nil || h.sender == nil {
+		writeJSON(w, http.StatusOK, map[string]any{"sent": false})
+		return
+	}
+	html, _ := h.sender.RenderLayout("cwmerch", "<p>This is a test email sent with your CWCloud API key.</p>")
+	sent := h.sender.Send(r.Context(), h.woo.Option(r.Context(), "woocommerce_email_from_address"), p.To, "", "", "cwmerch test email", html, nil)
+	writeJSON(w, http.StatusOK, map[string]any{"sent": sent})
 }

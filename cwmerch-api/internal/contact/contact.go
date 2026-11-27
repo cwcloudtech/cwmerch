@@ -88,6 +88,18 @@ type Client struct {
 	apiURL string
 	formID string
 	client *http.Client
+	// Resolve reads the CWCloud URL and contact form id at send time
+	// (WordPress options set from the administration).
+	Resolve func(ctx context.Context) (apiURL, formID string)
+}
+
+func (c *Client) creds(ctx context.Context) (string, string) {
+	if c.Resolve != nil {
+		if url, id := c.Resolve(ctx); url != "" && id != "" {
+			return url, id
+		}
+	}
+	return c.apiURL, c.formID
 }
 
 // New builds a Client for the given CWCloud API base URL and contact form
@@ -101,7 +113,8 @@ func New(apiURL, formID string) *Client {
 // ai-instruct-54: "If this variable is not set, a 405 error will be sent")
 // rather than relying on Send to fail.
 func (c *Client) Configured() bool {
-	return utils.IsNotBlank(c.formID) && utils.IsNotBlank(c.apiURL)
+	url, id := c.creds(context.Background())
+	return utils.IsNotBlank(id) && utils.IsNotBlank(url)
 }
 
 // Send posts one contact form submission. Returns an error if the request
@@ -109,8 +122,9 @@ func (c *Client) Configured() bool {
 // unlike internal/email, this is a live user-facing form, so failures are
 // surfaced to the caller rather than best-effort swallowed.
 func (c *Client) Send(ctx context.Context, s Submission) error {
+	apiURL, formID := c.creds(ctx)
 	payload := request{
-		ID: c.formID, Email: s.Email, Subject: s.Subject, Message: s.Message,
+		ID: formID, Email: s.Email, Subject: s.Subject, Message: s.Message,
 		Name: s.Name, Firstname: s.Firstname,
 	}
 	body, err := json.Marshal(payload)
@@ -118,7 +132,7 @@ func (c *Client) Send(ctx context.Context, s Submission) error {
 		return fmt.Errorf("failed to marshal contact request: %w", err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, c.apiURL+"/v1/contactreq", bytes.NewReader(body))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, apiURL+"/v1/contactreq", bytes.NewReader(body))
 	if err != nil {
 		return fmt.Errorf("failed to build contact request: %w", err)
 	}

@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { usePermalinks } from "../../lib/permalinks";
 import { FiDownload } from "react-icons/fi";
 import { Link, useParams } from "react-router-dom";
 import { api, fetchBlob, normalizePaged, saveBlob } from "../../api/client";
@@ -10,6 +11,7 @@ import OrderDetails from "../../components/OrderDetails";
 import { Empty, ErrorBox, Pagination, Spinner, StatusBadge } from "../../components/ui";
 
 export const Orders = () => {
+  const links = usePermalinks();
   const { t, formatDate } = useI18n();
   const { money } = useShop();
   const [page, setPage] = useState(1);
@@ -22,7 +24,7 @@ export const Orders = () => {
   if (data.items.length === 0)
     return (
       <Empty title={t("account.noOrders")}>
-        <Link to="/shop" className="btn btn-primary">
+        <Link to={links.shop} className="btn btn-primary">
           {t("cart.returnToShop")}
         </Link>
       </Empty>
@@ -113,6 +115,7 @@ export const ViewOrder = () => {
 };
 
 export const Downloads = () => {
+  const links = usePermalinks();
   const { t, formatDate } = useI18n();
   const { data, loading, error } = useAsync(async () => (await api.get("/v1/users/me/downloads")).data || [], [], []);
   if (loading) return <Spinner />;
@@ -134,7 +137,7 @@ export const Downloads = () => {
           {list.map((d) => (
             <tr key={`${d.productId}-${d.downloadId}`}>
               <td>
-                <Link to={`/product/${d.productId}`}>{d.productName}</Link>
+                <Link to={links.product(d.productId)}>{d.productName}</Link>
               </td>
               <td>{d.remaining === null || d.remaining === undefined || Number(d.remaining) < 0 ? "∞" : d.remaining}</td>
               <td>{d.expiresAt ? formatDate(d.expiresAt) : t("account.never")}</td>

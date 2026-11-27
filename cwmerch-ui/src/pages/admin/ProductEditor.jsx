@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { usePermalinks } from "../../lib/permalinks";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import { FiArrowLeft, FiArrowRight, FiExternalLink, FiTrash2, FiX } from "react-icons/fi";
@@ -88,6 +89,7 @@ const CategoryChecklist = ({ categories, value, onChange }) => {
 };
 
 const ProductEditor = () => {
+  const links = usePermalinks();
   const { id } = useParams();
   const isNew = !id || id === "new";
   const navigate = useNavigate();
@@ -234,7 +236,7 @@ const ProductEditor = () => {
     <div className="stack-lg">
       <PageHead title={isNew ? t("admin.nav.addProduct") : t("admin.products.edit")}>
         {!isNew && p.status === "publish" && (
-          <a href={`/product/${p.slug}`} target="_blank" rel="noopener noreferrer" className="btn btn-secondary btn-sm">
+          <a href={links.product(p)} target="_blank" rel="noopener noreferrer" className="btn btn-secondary btn-sm">
             <FiExternalLink aria-hidden="true" /> {t("admin.products.view")}
           </a>
         )}

@@ -258,6 +258,11 @@ func New(h Handlers, c Config) http.Handler {
 					r.Get("/{id}/invoice", h.Commerce.OrderInvoice)
 					r.Post("/{id}/invoice", h.Commerce.IssueOrderInvoice)
 				})
+				r.Get("/cwcloud-settings", h.Commerce.CWCloudSettings)
+				r.Put("/cwcloud-settings", h.Commerce.UpdateCWCloudSettings)
+				r.Post("/cwcloud-settings/test-email", h.Commerce.TestEmail)
+				r.Get("/permalinks", h.Commerce.Permalinks)
+				r.Put("/permalinks", h.Commerce.UpdatePermalinks)
 				r.Get("/shop-config", h.Commerce.ShopConfig)
 				r.Put("/shop-config", h.Commerce.UpdateShopConfig)
 				r.Route("/payment-providers", func(r chi.Router) {

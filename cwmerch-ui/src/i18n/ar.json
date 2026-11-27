@@ -853,7 +853,9 @@
       "emails": "رسائل البريد الإلكتروني",
       "advanced": "متقدم",
       "shop": "المتجر",
-      "invoicing": "الفوترة"
+      "invoicing": "الفوترة",
+      "cwcloud": "البريد والتواصل (CWCloud)",
+      "permalinks": "الروابط الدائمة"
     }
   },
   "tax": {
@@ -1327,5 +1329,54 @@
     "willCall": "سنتصل بك على الرقم {{phone}} لتأكيد طلبك.",
     "willCallNoPhone": "سنتصل بك لتأكيد طلبك.",
     "keepNumber": "احتفظ بهذا الرقم: فهو يُعرّف طلبك عندما نتصل بك."
+  },
+  "permalinks": {
+    "title": "الروابط الدائمة",
+    "intro": "عناوين المنتجات والتصنيفات والوسوم، مشتركة مع ووردبريس (WooCommerce ← الإعدادات ← الروابط الدائمة): تحتفظ الصفحات بالعنوان نفسه على cwmerch وووردبريس.",
+    "shopPage": "صفحة المتجر: {{path}} (الاسم اللطيف لصفحة متجر WooCommerce).",
+    "presets": {
+      "shopBase": "قاعدة المتجر",
+      "shopCategory": "قاعدة المتجر مع التصنيف"
+    },
+    "productBase": "قاعدة المنتجات",
+    "productBaseHint": "مثال: {{example}}. استخدم %product_cat% لإدراج التصنيف في العنوان.",
+    "categoryBase": "قاعدة التصنيفات",
+    "tagBase": "قاعدة الوسوم",
+    "attributeBase": "قاعدة الخصائص",
+    "wordpressNotice": "يُحفظ في خيار woocommerce_permalinks في ووردبريس؛ يعيد ووردبريس بناء قواعد إعادة الكتابة في طلبه التالي."
+  },
+  "cwcloud": {
+    "title": "بريد CWCloud",
+    "intro": "مفتاح واجهة CWCloud المستخدم لإرسال الرسائل. يُخزَّن في ووردبريس (الخيار cwcloud-api-secret) ويُشارك مع إضافة CWCloud.",
+    "apiUrl": "عنوان واجهة CWCloud",
+    "apiKey": "مفتاح واجهة CWCloud",
+    "apiKeyStored": "•••••••• (محفوظ، اتركه فارغًا للإبقاء عليه)",
+    "apiKeyMissing": "لا يوجد مفتاح: لن تُرسل الرسائل.",
+    "apiKeySource": {
+      "wordpress": "محفوظ في ووردبريس (مشترك مع إضافة CWCloud).",
+      "env": "من متغير البيئة CWCLOUD_API_KEY؛ حفظ مفتاح هنا يحل محله."
+    },
+    "clearKey": "حذف المفتاح المحفوظ",
+    "emailFrom": "بريد المرسل",
+    "emailFromHint": "عنوان «من» في WooCommerce (woocommerce_email_from_address).",
+    "testTo": "إرسال رسالة اختبار إلى",
+    "sendTest": "إرسال اختبار",
+    "testSent": "أُرسلت رسالة الاختبار إلى {{to}}",
+    "testFailed": "تعذّر إرسال رسالة الاختبار",
+    "contactTitle": "نموذج التواصل",
+    "contactMode": {
+      "contactreq": "تُرسل الرسائل إلى نموذج تواصل CWCloud أدناه.",
+      "email": "لا يوجد نموذج تواصل CWCloud: تُرسل الرسائل بالبريد إلى المستلم أدناه.",
+      "disabled": "نموذج التواصل معطّل: أضف مفتاح واجهة CWCloud أو معرّف نموذج."
+    },
+    "contactFormId": "معرّف نموذج تواصل CWCloud",
+    "contactFormIdHint": "اختياري. إن كان فارغًا تُرسل الرسائل بالبريد إلى المستلم.",
+    "contactRecipient": "المستلم",
+    "contactSubject": "بادئة الموضوع",
+    "recipientSource": {
+      "contact-form-7": "من نموذج Contact Form 7 «{{form}}» (يُحفظ هناك).",
+      "option": "محفوظ في خيارات ووردبريس.",
+      "admin_email": "افتراضيًا، بريد مدير ووردبريس."
+    }
   }
 }

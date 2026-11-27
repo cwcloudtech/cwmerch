@@ -84,7 +84,11 @@ func main() {
 	}
 	enricher := enrich.NewGeo(cfg.IPInfoToken).Enrich
 
+	shop.SetCWCloudDefaults(woo.CWCloudDefaults{APIURL: cfg.CWCloudAPIURL, APIKey: cfg.CWCloudAPIKey, ContactFormID: cfg.CWCloudContactFormID})
 	mailer := email.NewSender(cfg.CWCloudAPIURL, cfg.CWCloudAPIKey, cfg.EmailFrom, cfg.APIBaseURL)
+	// The key/URL saved in the shop settings (WordPress' cwcloud-api-secret
+	// option, shared with the CWCloud plugin) win over the environment.
+	mailer.Resolve = shop.CWCloudAPI
 	mailer.OnFailure = func(_ context.Context, to, subject, detail string) {
 		discordText(fmt.Sprintf("[ERROR] :envelope: email %q to %s could not be sent: %s", subject, to, detail))
 	}
@@ -170,6 +174,10 @@ func main() {
 	reports := handlers.NewReportsHandler(shop)
 	renderer := seo.New(shop, cfg.UIInternalURL, cfg.ShopURL)
 	contactClient := contact.New(cfg.CWCloudAPIURL, cfg.CWCloudContactFormID)
+	contactClient.Resolve = func(ctx context.Context) (string, string) {
+		apiURL, _ := shop.CWCloudAPI(ctx)
+		return apiURL, shop.ContactFormID(ctx)
+	}
 
 	h := router.Handlers{
 		User:       userHandler,
@@ -177,7 +185,7 @@ func main() {
 		MFA:        handlers.NewMFAHandler(users, webauthnCreds, audit, cfg.JWTSecret, cfg.ActivationMode, wa, mfaIssuer).WithConn(sessions, enricher, discord),
 		ApiKey:     handlers.NewApiKeyHandler(apiKeys, audit),
 		OIDC:       handlers.NewOIDCHandler(oidcProviders, users, webauthnCreds, audit, cfg.JWTSecret, cfg.APIBaseURL, cfg.UIBaseURL, cfg.OIDCKeycloakGroups, cfg.ActivationMode).WithConn(sessions, enricher, discord),
-		Contact:    handlers.NewContactHandler(contactClient),
+		Contact:    handlers.NewContactHandler(contactClient).WithEmailFallback(shop, mailer, audit),
 		AI:         handlers.NewAIHandler(aiStore, users, shop, fmt.Sprintf("http://127.0.0.1:%s", cfg.Port), aiDownloads, audit).WithNotifier(discord),
 		AIDownload: handlers.NewAIDownloadHandler(aiDownloads),
 		IPBan:      handlers.NewIPBanHandler(sessions).WithNotifier(discord),
@@ -187,7 +195,7 @@ func main() {
 		Reports:   reports,
 		Reviews:   handlers.NewReviewsHandler(shop, audit),
 		Customers: handlers.NewCustomersHandler(shop, audit),
-		Commerce:  handlers.NewCommerceHandler(shop, pay, invoices, wooMailer, users, audit),
+		Commerce:  handlers.NewCommerceHandler(shop, pay, invoices, wooMailer, users, audit).WithSender(mailer),
 	}
 	h.Shop.WithPayments(pay)
 	userHandler.RegistrationAllowed = h.Commerce.RegistrationAllowed

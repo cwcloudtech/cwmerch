@@ -3,8 +3,15 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
+	"html/template"
 	"log/slog"
 	"net/http"
+	"strings"
+
+	"cwmerch-api/internal/email"
+	"cwmerch-api/internal/models"
+	"cwmerch-api/internal/store"
+	"cwmerch-api/internal/woo"
 
 	"cwmerch-api/internal/contact"
 	"cwmerch-api/internal/utils"
@@ -27,6 +34,17 @@ var cwcloudContactErrors = map[string]struct {
 
 type ContactHandler struct {
 	contact *contact.Client
+	woo     *woo.Store
+	mailer  *email.Sender
+	audit   auditor
+}
+
+// WithEmailFallback lets the form email the WordPress recipient (Contact
+// Form 7's, cwmerch's option or the admin email) when no CWCloud contact form
+// id is configured.
+func (h *ContactHandler) WithEmailFallback(w *woo.Store, mailer *email.Sender, audit *store.AuditStore) *ContactHandler {
+	h.woo, h.mailer, h.audit = w, mailer, newAuditor(audit)
+	return h
 }
 
 func NewContactHandler(contact *contact.Client) *ContactHandler {
@@ -53,7 +71,8 @@ type contactPayload struct {
 // dependency would normally get - this is a deploy-time configuration gap,
 // not a request-time server error.
 func (h *ContactHandler) Create(w http.ResponseWriter, r *http.Request) {
-	if !h.contact.Configured() {
+	viaEmail := !h.contact.Configured()
+	if viaEmail && (h.woo == nil || h.woo.CWCloudSettings(r.Context()).ContactMode != "email") {
 		writeError(w, http.StatusMethodNotAllowed, "The contact form is not configured", CodeContactFormNotConfigured)
 		return
 	}
@@ -69,6 +88,21 @@ func (h *ContactHandler) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if viaEmail {
+		recipient, subjectPrefix, _ := h.woo.ContactRecipient(r.Context())
+		subject := strings.TrimSpace(strings.TrimSpace(subjectPrefix) + " " + p.Subject)
+		name := strings.TrimSpace(p.Firstname + " " + p.Name)
+		body := template.HTML("<p><strong>" + template.HTMLEscapeString(orDash(name)) + "</strong> &lt;" + template.HTMLEscapeString(p.Email) +
+			"&gt;</p><p>" + strings.ReplaceAll(template.HTMLEscapeString(p.Message), "\n", "<br>") + "</p>")
+		html, err := h.mailer.RenderLayout(subject, body)
+		if err != nil || !h.mailer.Send(r.Context(), "", recipient, "", p.Email, subject, html, nil) {
+			writeError(w, http.StatusBadGateway, "Failed to send your message, please try again later", CodeContactFormFailed)
+			return
+		}
+		h.audit.recordAs(r.Context(), "", models.AuditContactSent, models.AuditSubjectSetting, "contact", map[string]any{"email": p.Email, "via": "email"})
+		writeJSON(w, http.StatusOK, map[string]string{"message": "Your message has been sent."})
+		return
+	}
 	err := h.contact.Send(r.Context(), contact.Submission{
 		Email: p.Email, Subject: p.Subject, Message: p.Message,
 		Name: p.Name, Firstname: p.Firstname,
@@ -88,4 +122,11 @@ func (h *ContactHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	writeJSON(w, http.StatusOK, map[string]string{"message": "Your message has been sent."})
+}
+
+func orDash(s string) string {
+	if strings.TrimSpace(s) == "" {
+		return "-"
+	}
+	return s
 }

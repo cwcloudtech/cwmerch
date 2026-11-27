@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { usePermalinks } from "../lib/permalinks";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { FiMenu, FiSearch, FiShoppingBag, FiUser, FiX, FiSettings, FiPhone, FiMail, FiMapPin } from "react-icons/fi";
 import { FaFacebook, FaInstagram, FaXTwitter, FaTiktok, FaYoutube, FaWhatsapp, FaPinterest } from "react-icons/fa6";
@@ -62,6 +63,7 @@ const ShopLayout = () => {
   const { user, isAdmin } = useAuth();
   const { t } = useI18n();
   const navigate = useNavigate();
+  const links = usePermalinks();
   const location = useLocation();
   const [search, setSearch] = useState("");
   const [menuOpen, setMenuOpen] = useState(false);
@@ -76,7 +78,7 @@ const ShopLayout = () => {
 
   const onSearch = (e) => {
     e.preventDefault();
-    navigate(`/shop?search=${encodeURIComponent(search.trim())}`);
+    navigate(`${links.shop}?search=${encodeURIComponent(search.trim())}`);
   };
 
   return (
@@ -160,10 +162,10 @@ const ShopLayout = () => {
             <NavLink to="/" end>
               {t("nav.home")}
             </NavLink>
-            {!shopClosed && <NavLink to="/shop">{t("nav.shop")}</NavLink>}
+            {!shopClosed && <NavLink to={links.shop}>{t("nav.shop")}</NavLink>}
             {!shopClosed &&
               topCategories.slice(0, 8).map((c) => (
-                <NavLink key={c.id} to={`/product-category/${c.slug}`}>
+                <NavLink key={c.id} to={links.category(c)}>
                   {c.name}
                 </NavLink>
               ))}
@@ -184,7 +186,7 @@ const ShopLayout = () => {
           </div>
           <nav aria-label={t("nav.footer")} className="footer-links">
             <h2 className="footer-title">{t("footer.shop")}</h2>
-            {!shopClosed && <Link to="/shop">{t("nav.shop")}</Link>}
+            {!shopClosed && <Link to={links.shop}>{t("nav.shop")}</Link>}
             <Link to="/my-account">{t("nav.myAccount")}</Link>
             {!shopClosed && <Link to="/cart">{t("nav.cart")}</Link>}
             {settings.contactEnabled !== false && <Link to="/contact">{t("nav.contact")}</Link>}

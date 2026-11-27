@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { usePermalinks } from "../../lib/permalinks";
+import { Link } from "react-router-dom";
 import { toast } from "react-toastify";
 import { FiShoppingBag, FiExternalLink } from "react-icons/fi";
 import { api, asArray } from "../../api/client";
@@ -171,6 +172,7 @@ const Reviews = ({ product, onPosted }) => {
 };
 
 const GroupedChildren = ({ ids }) => {
+  const links = usePermalinks();
   const { t } = useI18n();
   const { addItem } = useCart();
   const { data: children, loading } = useAsync(
@@ -209,13 +211,13 @@ const GroupedChildren = ({ ids }) => {
                     onChange={(e) => setQty({ ...qty, [c.id]: Math.max(0, Number(e.target.value) || 0) })}
                   />
                 ) : (
-                  <Link to={`/product/${c.slug}`} className="btn btn-secondary btn-sm">
+                  <Link to={links.product(c)} className="btn btn-secondary btn-sm">
                     {t("product.viewProduct")}
                   </Link>
                 )}
               </td>
               <td>
-                <Link to={`/product/${c.slug}`}>{c.name}</Link>
+                <Link to={links.product(c)}>{c.name}</Link>
               </td>
               <td>
                 <Price item={c} />
@@ -248,8 +250,8 @@ const Related = ({ ids }) => {
   );
 };
 
-const Product = () => {
-  const { slug } = useParams();
+const Product = ({ slug }) => {
+  const links = usePermalinks();
   const { t } = useI18n();
   const { settings, shopName, categories } = useShop();
   const { addItem } = useCart();
@@ -297,11 +299,11 @@ const Product = () => {
             description: truncate(product.shortDescription || product.description, 300),
             sku: product.sku || undefined,
             image: (product.images || []).map((i) => i.src),
-            url: window.location.origin + `/product/${product.slug}`,
+            url: window.location.origin + links.product(product),
             offers:
               product.type === "variable" && Number(product.priceMin) !== Number(product.priceMax)
                 ? { "@type": "AggregateOffer", lowPrice: product.priceMin, highPrice: product.priceMax, priceCurrency: settings.currency, availability: `https://schema.org/${availability}` }
-                : { "@type": "Offer", price: product.price, priceCurrency: settings.currency, availability: `https://schema.org/${availability}`, url: window.location.origin + `/product/${product.slug}` },
+                : { "@type": "Offer", price: product.price, priceCurrency: settings.currency, availability: `https://schema.org/${availability}`, url: window.location.origin + links.product(product) },
             ...(Number(product.ratingCount) > 0
               ? { aggregateRating: { "@type": "AggregateRating", ratingValue: product.averageRating, reviewCount: product.ratingCount } }
               : {}),
@@ -311,7 +313,7 @@ const Product = () => {
             "@type": "BreadcrumbList",
             itemListElement: [
               { "@type": "ListItem", position: 1, name: t("nav.home"), item: window.location.origin + "/" },
-              ...(fullCat ? [{ "@type": "ListItem", position: 2, name: fullCat.name, item: window.location.origin + `/product-category/${fullCat.slug}` }] : []),
+              ...(fullCat ? [{ "@type": "ListItem", position: 2, name: fullCat.name, item: window.location.origin + links.category(fullCat) }] : []),
               { "@type": "ListItem", position: fullCat ? 3 : 2, name: product.name },
             ],
           },
@@ -325,7 +327,7 @@ const Product = () => {
       <div className="container">
         {error?.response?.status === 404 ? (
           <Empty title={t("product.notFound")}>
-            <Link to="/shop" className="btn btn-primary">
+            <Link to={links.shop} className="btn btn-primary">
               {t("shop.allProducts")}
             </Link>
           </Empty>
@@ -370,7 +372,7 @@ const Product = () => {
 
   return (
     <div className="container product-page">
-      <Breadcrumbs items={[{ label: t("nav.shop"), to: "/shop" }, ...(fullCat ? [{ label: fullCat.name, to: `/product-category/${fullCat.slug}` }] : []), { label: product.name }]} />
+      <Breadcrumbs items={[{ label: t("nav.shop"), to: links.shop }, ...(fullCat ? [{ label: fullCat.name, to: links.category(fullCat) }] : []), { label: product.name }]} />
       <div className="product-main">
         <Gallery images={product.images} override={variation?.image} name={product.name} />
         <div className="product-summary">
@@ -463,7 +465,7 @@ const Product = () => {
                 {product.categories.map((c, i) => (
                   <span key={c.id}>
                     {i > 0 && ", "}
-                    <Link to={`/product-category/${c.slug}`}>{c.name}</Link>
+                    <Link to={links.category(c)}>{c.name}</Link>
                   </span>
                 ))}
               </p>
@@ -474,7 +476,7 @@ const Product = () => {
                 {product.tags.map((c, i) => (
                   <span key={c.id}>
                     {i > 0 && ", "}
-                    <Link to={`/product-tag/${c.slug}`}>{c.name}</Link>
+                    <Link to={links.tag(c)}>{c.name}</Link>
                   </span>
                 ))}
               </p>

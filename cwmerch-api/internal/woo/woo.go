@@ -60,8 +60,9 @@ type Store struct {
 	// SiteURL is the public shop URL (permalinks, emails, SEO).
 	SiteURL string
 
-	events OrderEvents
-	fees   FeeProvider
+	events  OrderEvents
+	fees    FeeProvider
+	cwcloud CWCloudDefaults
 }
 
 type optionEntry struct {

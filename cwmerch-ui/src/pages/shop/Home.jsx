@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import { usePermalinks } from "../../lib/permalinks";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { api, normalizePaged } from "../../api/client";
@@ -24,6 +25,7 @@ const QUERY = {
 };
 
 const ProductsSection = ({ section }) => {
+  const links = usePermalinks();
   const { t } = useI18n();
   const limit = Math.min(100, Number(section.limit) || 8);
   const { data, loading } = useAsync(
@@ -32,7 +34,7 @@ const ProductsSection = ({ section }) => {
     []
   );
   if (!loading && data.length === 0) return null;
-  const more = section.type === "onSale" ? "/shop?onSale=1" : section.type === "latest" ? "/shop?orderby=date" : section.type === "bestSellers" ? "/shop?orderby=popularity" : "/shop";
+  const more = links.shop + (section.type === "onSale" ? "?onSale=1" : section.type === "latest" ? "?orderby=date" : section.type === "bestSellers" ? "?orderby=popularity" : "");
   return (
     <section className="home-section container">
       <div className="section-head">
@@ -46,10 +48,12 @@ const ProductsSection = ({ section }) => {
   );
 };
 
-export const CategoryGrid = ({ categories }) => (
+export const CategoryGrid = ({ categories }) => {
+  const links = usePermalinks();
+  return (
   <div className="category-grid">
     {categories.map((c) => (
-      <Link key={c.id} to={`/product-category/${c.slug}`} className="category-card">
+      <Link key={c.id} to={links.category(c)} className="category-card">
         {c.image?.src ? <img src={c.image.src} alt={c.name} loading="lazy" /> : <div className="img-placeholder" aria-hidden="true" />}
         <span className="category-card-name">
           {c.name}
@@ -58,7 +62,8 @@ export const CategoryGrid = ({ categories }) => (
       </Link>
     ))}
   </div>
-);
+  );
+};
 
 const CategoriesSection = ({ section }) => {
   const { categories } = useShop();
