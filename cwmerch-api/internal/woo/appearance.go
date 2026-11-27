@@ -46,8 +46,10 @@ type Theme struct {
 
 // Themes are the presets offered in the appearance editor.
 var Themes = []Theme{
-	{ID: "classic", Name: "Classic", Fonts: Fonts{"Inter", "Inter"}, Colors: Colors{Primary: "#7f54b3", PrimaryText: "#ffffff", Secondary: "#3c3c3c", Accent: "#e6b800",
-		Background: "#ffffff", Surface: "#f7f7f9", Text: "#1e1e1e", Muted: "#6b6b76", Border: "#e2e2e8", Header: "#ffffff", HeaderText: "#1e1e1e", Footer: "#1e1e1e", FooterText: "#ffffff", Sale: "#d63638"}},
+	// The default: cwclock's blues (consistent with the cwmerch logo); the
+	// primary is cwclock's 700 shade so white text on it stays readable.
+	{ID: "classic", Name: "Classic", Fonts: Fonts{"Inter", "Inter"}, Colors: Colors{Primary: "#0a7fae", PrimaryText: "#ffffff", Secondary: "#334155", Accent: "#1cb9f7",
+		Background: "#ffffff", Surface: "#f8fafc", Text: "#0f172a", Muted: "#64748b", Border: "#e2e8f0", Header: "#ffffff", HeaderText: "#0f172a", Footer: "#0f172a", FooterText: "#f1f5f9", Sale: "#dc2626"}},
 	{ID: "garden", Name: "Garden", Fonts: Fonts{"Playfair Display", "Lato"}, Colors: Colors{Primary: "#2f6b3a", PrimaryText: "#ffffff", Secondary: "#7a5c3e", Accent: "#c9a227",
 		Background: "#fbfaf5", Surface: "#f1efe4", Text: "#24301f", Muted: "#66705f", Border: "#dcd8c6", Header: "#ffffff", HeaderText: "#24301f", Footer: "#1f3b24", FooterText: "#f1efe4", Sale: "#b5452b"}},
 	{ID: "rose", Name: "Rose", Fonts: Fonts{"Cormorant Garamond", "Montserrat"}, Colors: Colors{Primary: "#c2185b", PrimaryText: "#ffffff", Secondary: "#5e3a4c", Accent: "#f5b7c8",

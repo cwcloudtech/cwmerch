@@ -6,6 +6,7 @@ import { useCart } from "../../context/CartContext";
 import { useShop } from "../../context/ShopContext";
 import { useI18n } from "../../i18n/I18nContext";
 import { useSeo } from "../../lib/seo";
+import Img from "../../components/Img";
 import { Empty, ErrorBox, Field, Spinner } from "../../components/ui";
 
 export const CartNotices = ({ notices }) =>
@@ -213,7 +214,7 @@ const Cart = () => {
                     <tr key={line.key}>
                       <td>
                         <div className="cart-product">
-                          {line.image ? <img src={line.image} alt="" width="56" height="56" /> : <span className="img-placeholder thumb-sm" aria-hidden="true" />}
+                          <Img src={line.image} alt="" width="56" height="56" />
                           <div>
                             <Link to={links.product(line.productId)}>{line.name}</Link>
                             {(line.attributes || []).length > 0 && (

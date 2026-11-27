@@ -14,6 +14,7 @@ import { useI18n } from "../../i18n/I18nContext";
 import Price from "../../components/Price";
 import { ProductGrid } from "../../components/ProductCard";
 import Breadcrumbs from "../../components/Breadcrumbs";
+import Img from "../../components/Img";
 import { Empty, ErrorBox, Spinner, StarInput, Stars, Tabs, TextArea, TextField } from "../../components/ui";
 
 const attrKey = (a) => a.slug || a.name;
@@ -68,18 +69,18 @@ const Gallery = ({ images, override, name }) => {
       if (i >= 0) setActive(i);
     }
   }, [override, list]);
-  if (list.length === 0) return <div className="gallery"><div className="img-placeholder gallery-main" aria-hidden="true" /></div>;
+  if (list.length === 0) return <div className="gallery"><div className="gallery-main"><Img alt={name} /></div></div>;
   const main = list[Math.min(active, list.length - 1)];
   return (
     <div className="gallery">
       <div className="gallery-main">
-        <img src={main.src} alt={main.alt || name} />
+        <Img src={main.src} alt={main.alt || name} />
       </div>
       {list.length > 1 && (
         <div className="gallery-thumbs" role="list">
           {list.map((img, i) => (
             <button key={img.id || img.src} type="button" role="listitem" className={`thumb ${i === active ? "is-active" : ""}`} onClick={() => setActive(i)} aria-label={t("product.showImage", { n: i + 1 })} aria-pressed={i === active}>
-              <img src={img.src} alt="" loading="lazy" />
+              <Img src={img.src} alt="" loading="lazy" />
             </button>
           ))}
         </div>

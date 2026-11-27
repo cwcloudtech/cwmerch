@@ -42,7 +42,10 @@ const Catalogue = ({ mode = "shop", slug }) => {
 
   const page = Math.max(1, Number(params.get("page")) || 1);
   const search = params.get("search") || "";
-  const orderby = params.get("orderby") || "menu_order";
+  // A search is sorted by relevance by default (title matches first).
+  const defaultSort = search ? "relevance" : "menu_order";
+  const sorts = search ? ["relevance", ...SORTS] : SORTS;
+  const orderby = params.get("orderby") || defaultSort;
   const onSale = params.get("onSale") === "1";
   const minPrice = params.get("minPrice") || "";
   const maxPrice = params.get("maxPrice") || "";
@@ -193,8 +196,8 @@ const Catalogue = ({ mode = "shop", slug }) => {
             </p>
             <label className="inline-field">
               <span>{t("shop.sortBy")}</span>
-              <select className="input input-sm" value={orderby} onChange={(e) => update({ orderby: e.target.value === "menu_order" ? "" : e.target.value })}>
-                {SORTS.map((s) => (
+              <select className="input input-sm" value={orderby} onChange={(e) => update({ orderby: e.target.value === defaultSort ? "" : e.target.value })}>
+                {sorts.map((s) => (
                   <option key={s} value={s}>
                     {t(`shop.sort.${s}`)}
                   </option>

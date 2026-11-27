@@ -51,7 +51,7 @@ export const stripeAppearance = () => {
   return {
     theme: "stripe",
     variables: {
-      colorPrimary: v("--cwmerch-primary", "#7f54b3"),
+      colorPrimary: v("--cwmerch-primary", "#0a7fae"),
       colorBackground: v("--cwmerch-bg", "#ffffff"),
       colorText: v("--cwmerch-text", "#1e1e1e"),
       colorTextSecondary: v("--cwmerch-muted", "#6b6b76"),

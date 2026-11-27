@@ -691,8 +691,12 @@ func (s *Store) Products(ctx context.Context, q ProductQuery) (Paged[Product], e
 	} else {
 		where = append(where, "p.post_status IN ('publish', 'draft', 'pending', 'private', 'future')")
 	}
-	if q.Search != "" {
-		like := "%" + q.Search + "%"
+	search := strings.Join(strings.Fields(q.Search), " ")
+	terms := searchTerms(search)
+	// Like WordPress: every word must appear in the title, excerpt, content
+	// or SKU (of the product or one of its variations).
+	for _, term := range terms {
+		like := "%" + likeEscape(term) + "%"
 		where = append(where, `(p.post_title LIKE ? OR p.post_excerpt LIKE ? OR p.post_content LIKE ? OR EXISTS (SELECT 1 FROM `+s.T("postmeta")+
 			` sm WHERE sm.post_id = p.ID AND sm.meta_key = '_sku' AND sm.meta_value LIKE ?) OR EXISTS (SELECT 1 FROM `+s.T("posts")+
 			` v JOIN `+s.T("postmeta")+` vm ON vm.post_id = v.ID AND vm.meta_key = '_sku' WHERE v.post_parent = p.ID AND vm.meta_value LIKE ?))`)
@@ -762,7 +766,15 @@ func (s *Store) Products(ctx context.Context, q ProductQuery) (Paged[Product], e
 		return "ASC"
 	}
 	var order string
-	switch q.OrderBy {
+	var orderArgs []any
+	orderBy := q.OrderBy
+	if len(terms) > 0 && (orderBy == "" || orderBy == "menu_order" || orderBy == "relevance") {
+		orderBy = "relevance"
+	}
+	switch orderBy {
+	case "relevance":
+		order, orderArgs = searchRelevance(search, terms)
+		order += ", p.post_title ASC, p.ID"
 	case "date":
 		order = "p.post_date_gmt " + dir(true) + ", p.ID " + dir(true)
 	case "price":
@@ -795,7 +807,7 @@ func (s *Store) Products(ctx context.Context, q ProductQuery) (Paged[Product], e
 	if err := s.DB.QueryRowContext(ctx, `SELECT COUNT(*)`+from, args...).Scan(&total); err != nil {
 		return Paged[Product]{}, err
 	}
-	listed, err := s.DB.QueryContext(ctx, `SELECT `+postCols+from+` ORDER BY `+order+` LIMIT ? OFFSET ?`, append(args, perPage, offset)...)
+	listed, err := s.DB.QueryContext(ctx, `SELECT `+postCols+from+` ORDER BY `+order+` LIMIT ? OFFSET ?`, append(append(append([]any{}, args...), orderArgs...), perPage, offset)...)
 	if err != nil {
 		return Paged[Product]{}, err
 	}
@@ -919,4 +931,41 @@ func (s *Store) ProductsByIDs(ctx context.Context, ids []uint64, withVariations 
 		}
 	}
 	return out, nil
+}
+
+// searchTerms splits a search into its words (at most 8, like WordPress keeps
+// a bounded number); empty for no search.
+func searchTerms(search string) []string {
+	terms := strings.Fields(search)
+	if len(terms) > 8 {
+		terms = terms[:8]
+	}
+	return terms
+}
+
+// likeEscape escapes LIKE wildcards so "%" or "_" in a search are literal
+// (backslash is the default LIKE escape on MySQL/MariaDB and PostgreSQL).
+func likeEscape(s string) string {
+	return strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`).Replace(s)
+}
+
+// searchRelevance orders search results like WooCommerce's relevance sort:
+// the whole search as the title, then at the start of the title, then in the
+// title, then every word in the title, then the whole search in the excerpt,
+// then in the content, then the rest (a word found anywhere).
+func searchRelevance(search string, terms []string) (string, []any) {
+	e := likeEscape(search)
+	expr := `CASE WHEN p.post_title LIKE ? THEN 1 WHEN p.post_title LIKE ? THEN 2 WHEN p.post_title LIKE ? THEN 3`
+	args := []any{e, e + "%", "%" + e + "%"}
+	if len(terms) > 1 {
+		all := make([]string, len(terms))
+		for i, t := range terms {
+			all[i] = "p.post_title LIKE ?"
+			args = append(args, "%"+likeEscape(t)+"%")
+		}
+		expr += ` WHEN ` + strings.Join(all, " AND ") + ` THEN 4`
+	}
+	expr += ` WHEN p.post_excerpt LIKE ? THEN 5 WHEN p.post_content LIKE ? THEN 6 ELSE 7 END`
+	args = append(args, "%"+e+"%", "%"+e+"%")
+	return expr, args
 }

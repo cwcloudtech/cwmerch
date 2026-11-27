@@ -9,6 +9,7 @@ import { useShop } from "../../context/ShopContext";
 import { useI18n } from "../../i18n/I18nContext";
 import HeroSlider from "../../components/HeroSlider";
 import { ProductGrid } from "../../components/ProductCard";
+import Img from "../../components/Img";
 import { Spinner } from "../../components/ui";
 
 const DEFAULT_SECTIONS = [
@@ -54,7 +55,7 @@ export const CategoryGrid = ({ categories }) => {
   <div className="category-grid">
     {categories.map((c) => (
       <Link key={c.id} to={links.category(c)} className="category-card">
-        {c.image?.src ? <img src={c.image.src} alt={c.name} loading="lazy" /> : <div className="img-placeholder" aria-hidden="true" />}
+        <Img src={c.image?.src} alt={c.name} loading="lazy" />
         <span className="category-card-name">
           {c.name}
           {Number(c.count) > 0 && <small> ({c.count})</small>}

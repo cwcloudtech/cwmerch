@@ -86,6 +86,8 @@
     "cloneNotFound": "Aucun clonage n'a été lancé"
   },
   "nav": {
+    "scrollPrev": "Faire défiler le menu vers l'arrière",
+    "scrollNext": "Faire défiler le menu vers l'avant",
     "admin": "Administration",
     "breadcrumbs": "Fil d'Ariane",
     "cart": "Panier",
@@ -144,6 +146,7 @@
     "tags": "Étiquettes",
     "title": "Boutique",
     "sort": {
+      "relevance": "Pertinence",
       "menu_order": "Tri par défaut",
       "popularity": "Popularité",
       "rating": "Note moyenne",

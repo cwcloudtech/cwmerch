@@ -86,6 +86,8 @@
     "cloneNotFound": "No clone has been run"
   },
   "nav": {
+    "scrollPrev": "Scroll the menu back",
+    "scrollNext": "Scroll the menu forward",
     "admin": "Administration",
     "breadcrumbs": "Breadcrumb",
     "cart": "Cart",
@@ -144,6 +146,7 @@
     "tags": "Tags",
     "title": "Shop",
     "sort": {
+      "relevance": "Relevance",
       "menu_order": "Default sorting",
       "popularity": "Popularity",
       "rating": "Average rating",

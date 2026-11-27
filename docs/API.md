@@ -69,7 +69,7 @@ API. This file is the human overview of the same surface.
 |---|---|
 | `GET /v1/shop/settings` | `ShopSettings` (below) |
 | `GET /v1/shop/countries` | `[{code, name, states:[{code,name}]}]` restricted to the selling countries |
-| `GET /v1/shop/products` | `?search&category(slug or id)&tag&minPrice&maxPrice&onSale&featured&orderby=menu_order|date|price|price-desc|popularity|rating|title&page&perPage` → paged `Product` (no `variations`) |
+| `GET /v1/shop/products` | `?search&category(slug or id)&tag&minPrice&maxPrice&onSale&featured&orderby=relevance|menu_order|date|price|price-desc|popularity|rating|title&page&perPage` → paged `Product` (no `variations`). `search`: every word must appear in the title, excerpt, content or SKU; sorted by relevance by default (whole search as the title, at its start, in it, every word in the title, then excerpt, then content) |
 | `GET /v1/shop/products/{idOrSlug}` | `Product` with `variations` and `related` (ids) |
 | `GET /v1/shop/products/{id}/reviews` | `[Review]` approved only |
 | `POST /v1/shop/products/{id}/reviews` | `{rating, review, author?, email?}` (auth optional; obeys "verified owners only") |

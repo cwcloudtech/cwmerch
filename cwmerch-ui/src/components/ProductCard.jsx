@@ -5,6 +5,7 @@ import { FiShoppingBag } from "react-icons/fi";
 import Price from "./Price";
 import { Stars } from "./ui";
 import { useCart } from "../context/CartContext";
+import Img from "./Img";
 import { useI18n } from "../i18n/I18nContext";
 
 const ProductCard = ({ product }) => {
@@ -22,7 +23,7 @@ const ProductCard = ({ product }) => {
   return (
     <article className="product-card">
       <Link to={links.product(product)} className="product-card-media">
-        {image ? <img src={image.src} alt={image.alt || product.name} loading="lazy" /> : <div className="img-placeholder" aria-hidden="true" />}
+        <Img src={image?.src} alt={image?.alt || product.name} loading="lazy" />
         {product.onSale && <span className="sale-flash">{t("product.sale")}</span>}
         {product.stockStatus === "outofstock" && <span className="oos-flash">{t("product.outOfStock")}</span>}
       </Link>

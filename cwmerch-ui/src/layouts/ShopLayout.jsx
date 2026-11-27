@@ -1,7 +1,7 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { usePermalinks } from "../lib/permalinks";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
-import { FiMenu, FiSearch, FiShoppingBag, FiUser, FiX, FiSettings, FiPhone, FiMail, FiMapPin } from "react-icons/fi";
+import { FiChevronLeft, FiChevronRight, FiSearch, FiShoppingBag, FiUser, FiSettings, FiPhone, FiMail, FiMapPin } from "react-icons/fi";
 import { FaFacebook, FaInstagram, FaXTwitter, FaTiktok, FaYoutube, FaWhatsapp, FaPinterest } from "react-icons/fa6";
 import { useShop } from "../context/ShopContext";
 import { useCart } from "../context/CartContext";
@@ -57,6 +57,104 @@ export const Brand = ({ appearance, name, small }) => {
   );
 };
 
+// NavScroller keeps the menu on one line: it slides horizontally instead of
+// wrapping, on its own (every few seconds, back to the start at the end;
+// paused while hovered, focused or touched, off with reduced motion) or with
+// the arrows / touch / trackpad, and brings the current page's link into view.
+const AUTO_SLIDE_MS = 3500;
+const NavScroller = ({ children, label }) => {
+  const { t } = useI18n();
+  const ref = useRef(null);
+  const location = useLocation();
+  const [edges, setEdges] = useState({ prev: false, next: false });
+  const pausedUntil = useRef(0);
+  const hovered = useRef(false);
+
+  const update = useCallback(() => {
+    const el = ref.current;
+    if (!el) return;
+    // RTL scrollLeft runs from 0 to negative values.
+    const pos = Math.abs(el.scrollLeft);
+    setEdges({ prev: pos > 2, next: pos + el.clientWidth < el.scrollWidth - 2 });
+  }, []);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return undefined;
+    update();
+    el.addEventListener("scroll", update, { passive: true });
+    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(update) : null;
+    ro?.observe(el);
+    window.addEventListener("resize", update);
+    return () => {
+      el.removeEventListener("scroll", update);
+      ro?.disconnect();
+      window.removeEventListener("resize", update);
+    };
+  }, [update, children]);
+
+  useEffect(() => {
+    const el = ref.current;
+    const active = el?.querySelector("a.active");
+    if (!el || !active) return;
+    const box = el.getBoundingClientRect();
+    const a = active.getBoundingClientRect();
+    if (a.left < box.left || a.right > box.right) {
+      el.scrollBy({ left: a.left - box.left - (box.width - a.width) / 2, behavior: "smooth" });
+    }
+  }, [location.pathname]);
+
+  const slide = useCallback((towardEnd) => {
+    const el = ref.current;
+    if (!el) return;
+    const rtl = getComputedStyle(el).direction === "rtl";
+    const step = el.clientWidth * 0.6;
+    el.scrollBy({ left: (towardEnd !== rtl ? 1 : -1) * step, behavior: "smooth" });
+  }, []);
+
+  // A manual slide pauses the automatic one for a while.
+  const pause = (ms = 8000) => {
+    pausedUntil.current = Date.now() + ms;
+  };
+
+  useEffect(() => {
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return undefined;
+    const id = window.setInterval(() => {
+      const el = ref.current;
+      if (!el || hovered.current || document.hidden || Date.now() < pausedUntil.current) return;
+      if (el.contains(document.activeElement)) return;
+      const pos = Math.abs(el.scrollLeft);
+      if (el.scrollWidth - el.clientWidth < 4) return; // everything fits
+      if (pos + el.clientWidth >= el.scrollWidth - 2) el.scrollTo({ left: 0, behavior: "smooth" });
+      else slide(true);
+    }, AUTO_SLIDE_MS);
+    return () => window.clearInterval(id);
+  }, [slide]);
+
+  return (
+    <nav
+      className={`site-nav ${edges.prev ? "has-prev" : ""} ${edges.next ? "has-next" : ""}`}
+      aria-label={label}
+      onMouseEnter={() => (hovered.current = true)}
+      onMouseLeave={() => (hovered.current = false)}
+      onTouchStart={() => pause()}
+      onWheel={() => pause()}
+    >
+      <div className="container nav-wrap">
+        <button type="button" className="nav-arrow nav-arrow-prev" onClick={() => (pause(), slide(false))} aria-label={t("nav.scrollPrev")} tabIndex={-1} hidden={!edges.prev}>
+          <FiChevronLeft aria-hidden="true" />
+        </button>
+        <div className="nav-row" ref={ref}>
+          {children}
+        </div>
+        <button type="button" className="nav-arrow nav-arrow-next" onClick={() => (pause(), slide(true))} aria-label={t("nav.scrollNext")} tabIndex={-1} hidden={!edges.next}>
+          <FiChevronRight aria-hidden="true" />
+        </button>
+      </div>
+    </nav>
+  );
+};
+
 const ShopLayout = () => {
   const { settings, appearance, shopName, categories, shopClosed } = useShop();
   const { count } = useCart();
@@ -66,9 +164,6 @@ const ShopLayout = () => {
   const links = usePermalinks();
   const location = useLocation();
   const [search, setSearch] = useState("");
-  const [menuOpen, setMenuOpen] = useState(false);
-
-  useEffect(() => setMenuOpen(false), [location.pathname]);
 
   const closedHere = shopClosed && isClosedRoute(location.pathname);
   const topCategories = categories.filter((c) => !Number(c.parent) && c.slug !== "uncategorized");
@@ -101,16 +196,6 @@ const ShopLayout = () => {
       )}
       <header className="site-header">
         <div className="container header-row">
-          <button
-            type="button"
-            className="icon-btn menu-toggle"
-            aria-expanded={menuOpen}
-            aria-controls="site-nav"
-            aria-label={menuOpen ? t("common.closeMenu") : t("common.openMenu")}
-            onClick={() => setMenuOpen((o) => !o)}
-          >
-            {menuOpen ? <FiX /> : <FiMenu />}
-          </button>
           <div className="brand-block">
             <Brand appearance={appearance} name={shopName} />
             {tagline && <span className="tagline hide-mobile">{tagline}</span>}
@@ -136,7 +221,7 @@ const ShopLayout = () => {
           </form>
           )}
           <div className="header-actions">
-            <LanguageSwitcher className="hide-mobile" />
+            <LanguageSwitcher />
             {isAdmin && (
               <Link to="/admin" className="icon-btn" aria-label={t("nav.admin")} title={t("nav.admin")}>
                 <FiSettings />
@@ -157,22 +242,19 @@ const ShopLayout = () => {
             )}
           </div>
         </div>
-        <nav id="site-nav" className={`site-nav ${menuOpen ? "is-open" : ""}`} aria-label={t("nav.main")}>
-          <div className="container nav-row">
+        <NavScroller label={t("nav.main")}>
             <NavLink to="/" end>
               {t("nav.home")}
             </NavLink>
             {!shopClosed && <NavLink to={links.shop}>{t("nav.shop")}</NavLink>}
             {!shopClosed &&
-              topCategories.slice(0, 8).map((c) => (
+              topCategories.map((c) => (
                 <NavLink key={c.id} to={links.category(c)}>
                   {c.name}
                 </NavLink>
               ))}
             {settings.contactEnabled !== false && <NavLink to="/contact">{t("nav.contact")}</NavLink>}
-            <LanguageSwitcher className="show-mobile" />
-          </div>
-        </nav>
+        </NavScroller>
       </header>
       <main id="main" className="site-main">
         {closedHere ? <ShopClosed /> : <Outlet />}
