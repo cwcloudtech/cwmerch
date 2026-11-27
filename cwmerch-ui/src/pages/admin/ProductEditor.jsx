@@ -10,6 +10,7 @@ import { useI18n } from "../../i18n/I18nContext";
 import { PageHead, uploadMedia, UploadButton } from "../../components/admin";
 import { ConfirmModal, ErrorBox, Field, SelectField, Spinner, Tabs, TextArea, TextField, Toggle } from "../../components/ui";
 import ProductAttributes from "./ProductAttributes";
+import RichTextEditor from "../../components/RichTextEditor";
 import ProductVariations from "./ProductVariations";
 
 const NEW_PRODUCT = {
@@ -256,7 +257,7 @@ const ProductEditor = () => {
           <section className="card stack">
             <TextField label={t("admin.products.name")} value={p.name} onChange={set("name")} required className="field-lg" />
             <TextField label={t("admin.products.slug")} value={p.slug} onChange={(v) => set("slug")(slugify(v))} placeholder={slugify(p.name)} />
-            <TextArea label={t("admin.products.description")} hint={t("admin.products.htmlAllowed")} value={p.description} onChange={set("description")} rows={10} className="mono-area" />
+            <RichTextEditor label={t("admin.products.description")} value={p.description} onChange={set("description")} minHeight={260} />
           </section>
 
           <section className="card stack">
@@ -422,7 +423,7 @@ const ProductEditor = () => {
           </section>
 
           <section className="card">
-            <TextArea label={t("admin.products.shortDescription")} hint={t("admin.products.htmlAllowed")} value={p.shortDescription} onChange={set("shortDescription")} rows={4} className="mono-area" />
+            <RichTextEditor label={t("admin.products.shortDescription")} value={p.shortDescription} onChange={set("shortDescription")} minHeight={120} />
           </section>
         </div>
 

@@ -49,6 +49,9 @@ The WooCommerce features, on WooCommerce's own storage:
 * **Back office**: dashboard, orders, products, categories, tags, attributes, coupons, customers, reviews
   moderation, reports (sales, top products/categories, stock, customers), settings (general, products,
   tax, shipping, payments, accounts, emails, advanced), users, audit trail, IP bans.
+  Product descriptions (long and short) use a WYSIWYG editor (Quill, like comwork-cloud-ui's emails)
+  with an HTML tab; HTML the visual editor can't keep (Divi blocks, classes, styles, shortcodes) opens in
+  the HTML tab and is never rewritten unless edited.
 
 Plus:
 

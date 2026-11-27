@@ -5,6 +5,7 @@ import { api, asArray } from "../../../api/client";
 import { useAsync } from "../../../lib/useAsync";
 import { useI18n } from "../../../i18n/I18nContext";
 import { ErrorBox, Field, SelectField, Spinner, TextArea, TextField, Toggle } from "../../../components/ui";
+import PaymentLogo from "../../../components/PaymentLogo";
 
 // Known provider fields; anything else the API sends is still editable (generic).
 const PROVIDERS = {
@@ -153,7 +154,8 @@ const Provider = ({ provider, onSaved }) => {
     <section className="card stack">
       <div className="section-head">
         <div>
-          <h3>
+          <h3 className="provider-title">
+            <PaymentLogo id={provider.id} />
             {provider.name || provider.id}{" "}
             <span className={`badge ${provider.configured ? "badge-completed" : "badge-pending"}`}>{provider.configured ? t("onlinePayments.configured") : t("onlinePayments.notConfigured")}</span>{" "}
             <span className="badge">{modeLabel(draft.mode)}</span>

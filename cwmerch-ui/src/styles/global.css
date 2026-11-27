@@ -3236,3 +3236,104 @@ pre {
   outline: 1px dashed var(--c-border);
   outline-offset: 2px;
 }
+
+/* online payment providers: drawn brand marks */
+.provider-title {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+.payment-logo {
+  flex: none;
+  border-radius: 6px;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.15);
+}
+
+/* rich text editor (Quill) with an HTML tab */
+.notice-warning {
+  background: color-mix(in srgb, var(--warning) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--warning) 45%, transparent);
+  color: var(--c-text);
+}
+.rich-editor-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.rich-editor-tabs {
+  display: inline-flex;
+  padding: 2px;
+  border: 1px solid var(--c-border);
+  border-radius: 8px;
+  background: var(--c-surface);
+}
+.rich-editor-tabs button {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--c-muted);
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+.rich-editor-tabs button.is-active {
+  background: var(--c-card);
+  color: var(--c-text);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.12);
+}
+.rich-editor-quill .ql-toolbar.ql-snow,
+.rich-editor-quill .ql-container.ql-snow {
+  border-color: var(--c-border);
+}
+.rich-editor-quill .ql-toolbar.ql-snow {
+  border-radius: var(--c-radius) var(--c-radius) 0 0;
+  background: var(--c-surface);
+}
+.rich-editor-quill .ql-container.ql-snow {
+  border-radius: 0 0 var(--c-radius) var(--c-radius);
+  background: var(--c-card);
+  color: var(--c-text);
+  font: inherit;
+  font-size: 0.95rem;
+}
+.rich-editor-quill .ql-editor {
+  min-height: var(--rich-min-height, 220px);
+}
+.rich-editor-quill .ql-editor.ql-blank::before {
+  color: var(--c-muted);
+}
+.rich-editor-quill .ql-snow .ql-stroke {
+  stroke: var(--c-text);
+}
+.rich-editor-quill .ql-snow .ql-fill,
+.rich-editor-quill .ql-snow .ql-stroke.ql-fill {
+  fill: var(--c-text);
+}
+.rich-editor-quill .ql-snow .ql-picker,
+.rich-editor-quill .ql-snow .ql-picker-label {
+  color: var(--c-text);
+}
+.rich-editor-quill .ql-snow .ql-picker-options,
+.rich-editor-quill .ql-snow .ql-tooltip {
+  background: var(--c-card);
+  color: var(--c-text);
+  border-color: var(--c-border);
+}
+.rich-editor-quill .ql-snow .ql-tooltip input[type="text"] {
+  background: var(--c-surface);
+  color: var(--c-text);
+  border-color: var(--c-border);
+}
+[dir="rtl"] .rich-editor-quill .ql-editor {
+  text-align: right;
+}
+.rich-editor-source {
+  min-height: 140px;
+}

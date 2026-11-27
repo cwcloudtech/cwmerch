@@ -44,6 +44,7 @@ Tested on PostgreSQL 17.
 | `mysql/V1__woocommerce_schema.sql` | Schema only: the 52 tables of WordPress core + WooCommerce (core, Admin/Analytics, HPOS order tables, Action Scheduler), captured with `mysqldump --no-data` from a fresh WordPress 7.1.5 + WooCommerce 11.3.1 install with HPOS on. `CREATE TABLE IF NOT EXISTS`, InnoDB, `utf8mb4_unicode_520_ci`. |
 | `mysql/V2__cwmerch_tables.sql` | cwmerch's own `${table_prefix}cwmerch_*` tables. |
 | `mysql/V3__woocommerce_defaults.sql` | Idempotent seed of a fresh install's defaults: core options, the `<prefix>user_roles` roles/capabilities, WooCommerce settings (EUR, HPOS on, BACS/cheque/COD disabled), `product_type` / `product_visibility` / `product_cat` "Uncategorized" terms, and `default_product_cat`. It only inserts missing rows and never overwrites, so it is safe on a populated shop. |
+| `mysql/V4__default_vat_rates.sql` | Default VAT rates in WooCommerce's `woocommerce_tax_rates` (Standard class): Tunisia TVA 19 %, France TVA 20 %. Only for a country with no rate yet (never duplicates nor overrides an existing shop's rates); the shop edits them under Settings → Taxes. Applied only when taxes are enabled (`woocommerce_calc_taxes`). |
 | `mysql/init-existing-instance.sql` | Run by hand once, to adopt an existing WooCommerce database: creates `flyway_schema_history` and marks V1 as applied. |
 
 Tested on MySQL 8.4 and MariaDB 11.8.
