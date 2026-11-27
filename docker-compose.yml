@@ -105,7 +105,6 @@ services:
       - api
     environment:
       CWMERCH_API_URL: ${CWMERCH_API_URL:-http://localhost:8080}
-      CWMERCH_API_INTERNAL_URL: http://api:8080
     ports:
       - "3000:80"
 

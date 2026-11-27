@@ -13,6 +13,7 @@ RUN npm i -g pnpm@latest
 COPY cwmerch-ui/package.json cwmerch-ui/pnpm-lock.yaml cwmerch-ui/pnpm-workspace.yaml ./
 RUN pnpm install --frozen-lockfile
 COPY cwmerch-ui/ ./
+COPY cwmerch-ui/.env.dist ./.env
 COPY manifest.json ./public/manifest.json
 RUN pnpm run build
 
@@ -41,7 +42,6 @@ ENTRYPOINT ["/usr/local/bin/cwmerch-api"]
 FROM nginx:${NGINX_IMAGE_TAG} AS ui
 COPY --from=ui-build /app/dist /usr/share/nginx/html
 COPY .docker/nginx/default.conf /etc/nginx/conf.d/default.conf
-COPY .docker/nginx/seo-proxy.inc /etc/nginx/conf.d/seo-proxy.inc
 COPY .docker/nginx/docker-entrypoint.sh /docker-entrypoint.sh
 RUN chmod +x /docker-entrypoint.sh
 ENTRYPOINT ["/docker-entrypoint.sh"]

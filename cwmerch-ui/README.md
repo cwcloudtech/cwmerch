@@ -19,21 +19,18 @@ npx pnpm@latest run preview
 
 ## Runtime configuration
 
-The API base URL is **not** baked into the build. `index.html` loads `/config.js`,
-which sets `window.__CWMERCH__ = { apiUrl: "..." }` (dev default in
-`public/config.js`: `http://localhost:8080`).
-
-In the nginx image, `.docker/nginx/docker-entrypoint.sh` rewrites it at start:
+The API base URL is not baked into the build: `.env.dist` sets
+`VITE_API_URL="\${CWMERCH_API_URL}"`, so the bundle keeps the `${CWMERCH_API_URL}`
+placeholder. At container start, `.docker/nginx/docker-entrypoint.sh` runs `envsubst`
+on the built `.js`, `.css` and `.html` files with every defined environment variable
+(like comwork-cloud-ui), and `.docker/nginx/default.conf` serves them as a plain SPA.
 
 | Variable | Default | Used for |
 |---|---|---|
-| `CWMERCH_API_URL` | `http://localhost:8080` | public API URL the browser calls (written to `/config.js`) |
-| `CWMERCH_API_INTERNAL_URL` | `http://api:8080` | where nginx proxies SEO-rendered pages (`/v1/seo/html`), `/sitemap.xml` and `/robots.txt` |
+| `CWMERCH_API_URL` | `http://localhost:8080` | public API URL the browser calls |
 
-Copy `.docker/nginx/default.conf` and `.docker/nginx/seo-proxy.inc` to
-`/etc/nginx/conf.d/` and use the entrypoint script; the public routes (`/`, `/shop`,
-`/product/*`, `/product-category/*`, `/product-tag/*`) are served pre-rendered by
-the API for crawlers, falling back to the plain SPA when the API is unavailable.
+Not defined (placeholder left as is) or in development (`pnpm run dev`, no `.env`):
+`http://localhost:8080`.
 
 The storefront look (colours, fonts, logo, banner, home sections) comes from
 `GET /v1/shop/appearance` and the API's `/v1/shop/custom.css`; edit it under

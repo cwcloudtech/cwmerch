@@ -205,7 +205,7 @@ Same contract as cwclock:
 | `GET /v1/shop/themes` | colour/font presets: classic, garden, rose, ocean, sunset, midnight, minimal, luxury |
 | `GET /v1/shop/custom.css` | theme CSS variables (`--cwmerch-*`) + the admin's custom CSS |
 | `GET/PUT /v1/admin/appearance/` | edit the appearance (adds `customCss`) |
-| `GET /v1/seo/html?path=/product/slug` | the UI's `index.html` with the page's `<head>` (title, description, canonical, Open Graph, Twitter, JSON-LD) — the UI's nginx proxies public page navigations here |
+| `GET /v1/seo/html?path=/product/slug` | the UI's `index.html` with the page's `<head>` (title, description, canonical, Open Graph, Twitter, JSON-LD) — for a reverse proxy that routes public page navigations here (the UI's nginx does not) |
 | `GET /sitemap.xml`, `GET /robots.txt` | SEO |
 | `GET /v1/countries`, `GET /v1/currencies` | every country (`{iso, code, name, continent, states}`) / currency (`{code, symbol}`) |
 | `POST /v1/admin/products/{id}/restore` | take a product out of the trash |

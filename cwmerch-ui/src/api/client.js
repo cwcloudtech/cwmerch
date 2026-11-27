@@ -1,10 +1,15 @@
 import axios from "axios";
 
-// The API base URL is runtime config: /config.js (written by the container
-// entrypoint from ${CWMERCH_API_URL}) sets window.__CWMERCH__.
+// The API base URL: the build keeps the "${CWMERCH_API_URL}" placeholder
+// (.env.dist) and the container entrypoint replaces it with envsubst. Still a
+// placeholder (variable not defined) or empty: development default.
+const DEFAULT_API_URL = "http://localhost:8080";
+const configuredApiUrl = import.meta.env.VITE_API_URL;
+
 export const apiUrl = () => {
-  const configured = typeof window !== "undefined" && window.__CWMERCH__ && window.__CWMERCH__.apiUrl;
-  return String(configured || "http://localhost:8080").replace(/\/+$/, "");
+  const v = typeof configuredApiUrl === "string" ? configuredApiUrl.trim() : "";
+  const url = !v || /^\$\{[A-Z_]+\}$/.test(v) ? DEFAULT_API_URL : v;
+  return url.replace(/\/+$/, "");
 };
 
 export const TOKEN_KEY = "cwmerch.token";
