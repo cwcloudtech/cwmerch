@@ -72,7 +72,10 @@ Plus:
   `robots.txt`.
 * **Appearance**: shop name, logo, favicon, home banner slides, 8 colour themes (classic, garden, rose,
   ocean, sunset, midnight, minimal, luxury), fonts, corner radius, announcement bar, home sections, social
-  links and **custom CSS**.
+  links and **custom CSS**. Until the appearance is first saved, the storefront takes the **active WordPress
+  theme's colours and fonts** (Divi/Extra theme options and global colours, a block theme's global styles
+  or a classic theme's customizer), else the blue classic theme; read best-effort, missing options or
+  tables are ignored.
 * **Forgotten password** and **contact form** (CWCloud `contactreq`).
 * **Languages**: English, French and **Arabic** (right-to-left layout) for the storefront, the customer
   account, the back office, the emails and the AI assistant; the shop chooses which languages it offers

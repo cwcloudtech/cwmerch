@@ -540,7 +540,7 @@ func (h *ShopHandler) Appearance(w http.ResponseWriter, r *http.Request) {
 
 // Themes is GET /v1/shop/themes.
 func (h *ShopHandler) Themes(w http.ResponseWriter, r *http.Request) {
-	writeJSON(w, http.StatusOK, woo.Themes)
+	writeJSON(w, http.StatusOK, h.woo.ThemesFor(r.Context()))
 }
 
 // CustomCSS is GET /v1/shop/custom.css.

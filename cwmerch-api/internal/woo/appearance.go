@@ -172,9 +172,16 @@ func (s *Store) SaveSetting(ctx context.Context, name string, v any, by uint64) 
 // name falls back to WordPress' blogname).
 func (s *Store) Appearance(ctx context.Context, withCSS bool) (Appearance, error) {
 	a := defaultAppearance()
-	at, _, err := s.Setting(ctx, "appearance", &a)
+	at, saved, err := s.Setting(ctx, "appearance", &a)
 	if err != nil {
 		return Appearance{}, err
+	}
+	// Never saved: the active WordPress theme's colors (Divi, block or classic
+	// theme) before cwmerch's defaults.
+	if !saved {
+		if t, ok := s.WordPressTheme(ctx); ok {
+			a.Theme, a.Colors, a.Fonts = t.ID, t.Colors, t.Fonts
+		}
 	}
 	a.UpdatedAt = at
 	if a.Name == "" {
