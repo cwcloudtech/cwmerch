@@ -1,4 +1,4 @@
-# goocommerce API contract
+# cwmerch API contract
 
 The authoritative, always-in-sync description is the OpenAPI document generated
 from the router: `GET /openapi.json`, rendered by Swagger UI at `GET /` on the
@@ -32,7 +32,7 @@ API. This file is the human overview of the same surface.
 | `GET /metrics` | Prometheus |
 | `GET /v1/health`, `GET /v1/manifest` | liveness, build manifest `{version, sha, details}` |
 | `POST /v1/contact` | `{email, subject, message, name, firstname}` → forwarded to CWCloud `/v1/contactreq` |
-| `GET /v1/media/{path}` | uploaded images (when goocommerce owns the uploads folder) |
+| `GET /v1/media/{path}` | uploaded images (when cwmerch owns the uploads folder) |
 
 ## Authentication & account
 
@@ -153,7 +153,7 @@ Displayed prices follow `taxDisplayCart`; `subtotal`/`total` are always **exclud
  "taxLines":[{"id":4,"rateId":1,"label":"TVA","compound":false,"taxTotal":12.6,"shippingTaxTotal":1,"ratePercent":20}],
  "refunds":[{"id":110,"reason":"","amount":10,"createdAt":"...","refundedBy":1}],
  "discountTotal":7,"discountTax":1.4,"shippingTotal":5,"shippingTax":1,"cartTax":12.6,"totalTax":13.6,"total":81.6,
- "totalRefunded":0,"createdVia":"checkout|admin|goocommerce","customerIpAddress":"","customerUserAgent":""}
+ "totalRefunded":0,"createdVia":"checkout|admin|cwmerch","customerIpAddress":"","customerUserAgent":""}
 ```
 
 ## Admin (role `manager` or `superuser`)
@@ -192,7 +192,7 @@ Same contract as cwclock:
   — `AIConnection` = `{id, ownerId, name, provider, baseUrl, model, maxTokens, hasToken, role:"owner|user", createdAt, updatedAt}`, the write payload adds `token`.
 * `POST /v1/ai/chat` `{message, connectionId?, conversationId?, messages?:[{role, message}], settings?}` →
   `{status, message (Markdown answer), usage, model, conversationId, title, downloadTtlSeconds?}`.
-  The agent loop calls goocommerce's own API **with the caller's JWT** (tool `goocommerce_api`), guided by the embedded Markdown skills;
+  The agent loop calls cwmerch's own API **with the caller's JWT** (tool `cwmerch_api`), guided by the embedded Markdown skills;
   generated PDFs (accounting exports) come back as links to `GET /v1/ai-downloads/{id}`.
 * `GET /v1/ai/conversations/`, `GET /v1/ai/conversations/{id}`, `DELETE /v1/ai/conversations/` (`{ids?, all?}`)
 * `POST /v1/ai/cwcloud/adapter` — CWCloud external adapter: `{message}` or `{messages:[{role, message}]}`, optional `adapter` (subscription name) → `{status:"ok", message, usage:{prompt_tokens, completion_tokens, total_tokens}}`.
@@ -203,7 +203,7 @@ Same contract as cwclock:
 |---|---|
 | `GET /v1/shop/appearance` | storefront look: `{name, tagline, logo, favicon, theme, colors{primary, primaryText, secondary, accent, background, surface, text, muted, border, header, headerText, footer, footerText, sale}, fonts{heading, body}, radius, banner{enabled, autoplay, intervalSeconds, height, slides[{image, mobileImage, title, subtitle, buttonText, buttonLink, align, overlay, textColor}]}, announcement, homeSections[{type, title, limit, content}], social, contact, footerText, updatedAt}` |
 | `GET /v1/shop/themes` | colour/font presets: classic, garden, rose, ocean, sunset, midnight, minimal, luxury |
-| `GET /v1/shop/custom.css` | theme CSS variables (`--goo-*`) + the admin's custom CSS |
+| `GET /v1/shop/custom.css` | theme CSS variables (`--cwmerch-*`) + the admin's custom CSS |
 | `GET/PUT /v1/admin/appearance/` | edit the appearance (adds `customCss`) |
 | `GET /v1/seo/html?path=/product/slug` | the UI's `index.html` with the page's `<head>` (title, description, canonical, Open Graph, Twitter, JSON-LD) — the UI's nginx proxies public page navigations here |
 | `GET /sitemap.xml`, `GET /robots.txt` | SEO |
@@ -216,6 +216,96 @@ Cart/checkout lines accept `attributes` as a map (`{"pa_color":"Blue"}`) or a li
 (`[{"slug":"pa_color","option":"Blue"}]`) to pick "any" variation attributes. Checkout answers `409`
 with the priced `cart` when the cart has error notices (out of stock, invalid coupon…).
 
-**API-only mode** (`GOOCOMMERCE_API_ONLY=true`): the cart, checkout, order-received and customer
+**API-only mode** (`CWMERCH_API_ONLY=true`): the cart, checkout, order-received and customer
 account shop routes are not mounted; everything else (admin, reports, accounting, AI, auth, MFA, API keys)
-is. goocommerce then serves as an AI agent and back-office API next to an unchanged WooCommerce.
+is. cwmerch then serves as an AI agent and back-office API next to an unchanged WooCommerce.
+
+## ai-instruct-2: shop switch, online payments, invoices
+
+### Shop switch (cwmerch as an internal information system)
+
+* `GET /v1/admin/shop-config` / `PUT /v1/admin/shop-config` (manager) →
+  `{"shopEnabled": true, "closedMessage": "", "registrationEnabled": true}`.
+* `GET /v1/shop/settings` adds `shopEnabled`, `closedMessage`, `registrationEnabled`.
+* When `shopEnabled` is false the public storefront endpoints (products, categories, tags, reviews, cart,
+  checkout, sitemap) answer **403** `{"i18n_code":"errors.shopDisabled"}`; `/v1/shop/settings`,
+  `/v1/shop/appearance`, sign-in and the whole back office keep working. With `registrationEnabled`
+  false, `POST /v1/users/` answers 403 `errors.registrationDisabled`.
+
+### Online payments (adapter pattern: Stripe, Konnect, Flouci)
+
+* `GET /v1/admin/payment-providers` (manager) →
+  `[{"id":"stripe","name":"Stripe","enabled":false,"configured":false,"mode":"test|live","title":"Credit card (Stripe)","description":"","settings":{...public settings},"secrets":{"secretKey":true,"webhookSecret":false},"webhookUrl":"https://api.../v1/payments/stripe/webhook","currencies":["*"]}]`
+  — `secrets` only says whether each secret is stored (never its value).
+  * stripe settings: `publishableKey`; secrets: `secretKey`, `webhookSecret`.
+  * konnect settings: `walletId`, `acceptedPaymentMethods` (`["wallet","bank_card","e-DINAR"]`), `lifespan` (minutes), `addPaymentFeesToAmount`, `theme`; secrets: `apiKey`. `mode` test = sandbox.
+  * flouci settings: `publicKey`, `acceptCard`, `sessionTimeoutSecs`; secrets: `privateKey`. TND only.
+* `PUT /v1/admin/payment-providers/{id}` `{enabled, mode, title, description, settings:{...}, secrets:{...}}`
+  (a blank or absent secret keeps the stored one; secrets are sealed with `CWMERCH_SECRET_KEY`).
+* `POST /v1/admin/payment-providers/{id}/test` → `{"ok": true, "message": "..."}`.
+* `GET /v1/shop/settings` `paymentGateways` entries gain `"type":"offline|online"`, and online ones
+  `"publishableKey"` (Stripe).
+* Checkout with an online `paymentMethod` (`stripe`, `konnect`, `flouci`): the order is created
+  `pending`, and the 201 answer adds
+  `"payment": {"provider":"stripe","status":"requires_payment","reference":"pi_...","clientSecret":"pi_..._secret_...","publishableKey":"pk_...","redirectUrl":""}`
+  — Stripe: confirm in the browser with Stripe.js (Payment Element) using `clientSecret`, `return_url`
+  = `<UI>/checkout/payment/{orderId}?key={orderKey}`; Konnect/Flouci: redirect the browser to
+  `redirectUrl` (they come back to the same UI URL).
+* `GET /v1/shop/orders/{id}/payment?key=` → `{"status":"paid|pending|failed","order":Order}`
+  (asks the provider, idempotent: marks the order paid → processing if it is).
+* `POST /v1/shop/orders/{id}/pay?key=` → a new `payment` object for a still-pending order (retry).
+* Provider callbacks: `POST /v1/payments/stripe/webhook` (Stripe-Signature), `GET /v1/payments/konnect/webhook?payment_ref=`,
+  `POST|GET /v1/payments/flouci/webhook` (X-Flouci-Signature).
+
+### Invoices (Markdown / Go template → PDF, VAT or timbre fiscal)
+
+* `GET /v1/admin/invoicing/settings` / `PUT` (manager) — `InvoiceSettings`:
+  ```json
+  {"enabled":true,"autoGenerate":"none|processing|completed","numberPrefix":"FAC-","nextNumber":1,"numberPadding":5,
+   "resetYearly":true,"country":"FR","locale":"fr","taxMode":"vat|stamp|vat_stamp|none","vatLabel":"TVA",
+   "defaultVatRate":20,"vatExemptionMention":"TVA non applicable, art. 293 B du CGI","stampAmount":0,
+   "stampLabel":"Timbre fiscal","stampChargeCustomer":false,
+   "seller":{"name":"","address":"","postcode":"","city":"","country":"FR","email":"","phone":"","website":"",
+             "registrationLabel":"SIRET","registrationNumber":"","vatNumberLabel":"N° TVA intracommunautaire",
+             "vatNumber":"","iban":"","bic":""},
+   "legalMentions":"","paymentTerms":"","footer":"","template":""}
+  ```
+  `template` empty = the default template. `stampChargeCustomer` adds the stamp to the customer's total
+  at checkout (a fee line).
+* `GET /v1/admin/invoicing/country-defaults` → `[{"country":"TN","name":"Tunisia","taxMode":"vat_stamp","vatLabel":"TVA","defaultVatRate":19,"stampAmount":1,"stampLabel":"Timbre fiscal","currency":"TND","registrationLabel":"Matricule fiscal","vatNumberLabel":"Code TVA","numberPrefix":"FAC-","locale":"fr","vatExemptionMention":"","legalMentions":"..."}]`
+  (the decision table, keyed by ISO 3166 code; `*` is the fallback).
+* `POST /v1/admin/invoicing/apply-defaults` `{"country":"TN","createTaxRate":true}` → the updated settings
+  (and, with `createTaxRate`, a standard WooCommerce tax rate for that country when none exists).
+* `GET /v1/admin/invoicing/template` → `{"default":"<markdown template>","variables":[{"name":".Invoice.Number","description":"..."}]}`.
+* `POST /v1/admin/invoicing/preview` `{"template":"...optional...","orderId":123}` → `application/pdf`
+  (the last order when `orderId` is absent).
+* `GET /v1/admin/invoices?search&page&perPage` → paged `Invoice`;
+  `Invoice` = `{"id","number","orderId","issuedAt","customer":{"name","email"},"currency","totalHT","totalTax","stamp","totalTTC","taxes":[{"label","rate","base","amount"}],"lines":[...],"status":"issued"}`.
+* `POST /v1/admin/orders/{id}/invoice` → 201 `Invoice` (200 with the existing one: one invoice per order).
+* `GET /v1/admin/orders/{id}/invoice` → `Invoice` or 404.
+* `GET /v1/admin/invoices/{id}/pdf` (attachment `facture-FAC-2026-00001.pdf`), `GET /v1/admin/invoices/{id}/markdown`.
+* `POST /v1/admin/invoices/{id}/send` → emails the PDF to the customer `{"sent":true}`.
+* `GET /v1/users/me/orders/{id}/invoice` → the customer's invoice PDF (404 when none).
+* Cart and order JSON: `fees: [{"name":"Timbre fiscal","total":1,"totalTax":0}]` and `feeTotal`
+  (cart) / `feeLines` (order).
+
+**Country decision table administration** (manager): the rows behind "apply country defaults",
+pre-filled with cwclock's countries (AE, AU, BE, DE, DZ, EG, FR, GB, SA, TN, US) plus CA, CH, CI, CM, ES,
+IT, LU, MA, NL, PT, SN and the `*` fallback.
+
+* `GET /v1/admin/invoicing/country-defaults` → the list (each row has `country` + the fields above).
+* `GET /v1/admin/invoicing/country-defaults/{iso}` → one row (falls back to `*` with `"fallback": true`).
+* `PUT /v1/admin/invoicing/country-defaults/{iso}` → create or replace a row (body = the row without
+  `country`); `iso` is an ISO 3166-1 alpha-2 code or `*`.
+* `DELETE /v1/admin/invoicing/country-defaults/{iso}` → remove a row (`*` cannot be deleted).
+
+### Phone confirmation when no payment partner is configured
+
+When no online payment partner (Stripe, Konnect, Flouci) is enabled and configured for the shop currency:
+
+* `GET /v1/shop/settings` answers `"phoneConfirmation": true`.
+* `POST /v1/shop/checkout` **requires** `billing.phone` (8 to 15 digits; `+ . - ( )` and spaces allowed) —
+  else 400 `errors.phoneRequired`. `paymentMethod` may be empty (no offline gateway needed); the order
+  is placed **on hold** with the note "To confirm by phone with the customer at …", and its payment
+  method title is "Confirmation by phone" (French shops: "Confirmation par téléphone").
+* The 201 answer adds `"confirmation": {"orderNumber":"123","phone":"+216 20 000 000","message":"Your order number is 123. We will call you at … to confirm it."}`.

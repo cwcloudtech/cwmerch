@@ -1,13 +1,13 @@
-# Image builds for the delivery pipeline (ci/app/deliver.sh).
+# Image builds for the delivery pipeline (ci/deliver.sh).
 services:
   api:
-    image: ${CI_REGISTRY}/goocommerce-api:${VERSION}
+    image: ${CI_REGISTRY}/cwmerch-api:${VERSION}
     build:
       context: .
       dockerfile: Dockerfile
       target: api
   ui:
-    image: ${CI_REGISTRY}/goocommerce-ui:${VERSION}
+    image: ${CI_REGISTRY}/cwmerch-ui:${VERSION}
     build:
       context: .
       dockerfile: Dockerfile

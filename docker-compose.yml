@@ -1,4 +1,4 @@
-# goocommerce, fresh install: MySQL, the Flyway migrations, the API and the UI.
+# cwmerch, fresh install: MySQL, the Flyway migrations, the API and the UI.
 #
 #   cp .env.example .env   # then edit the secrets
 #   docker compose up -d --build
@@ -9,8 +9,8 @@
 #
 # Alongside an EXISTING WordPress/WooCommerce: drop the `db` service, point
 # MYSQL_* at the WordPress database, set WP_TABLE_PREFIX, and initialise
-# Flyway's history first (goocommerce-db/README.md). API only (AI agent for
-# WooCommerce, no shop UI): GOOCOMMERCE_API_ONLY=true and `docker compose up -d
+# Flyway's history first (cwmerch-db/README.md). API only (AI agent for
+# WooCommerce, no shop UI): CWMERCH_API_ONLY=true and `docker compose up -d
 # flyway api` (remove `db` from flyway's depends_on when using your own DB).
 services:
   db:
@@ -44,13 +44,13 @@ services:
       - -connectRetries=20
       - migrate
     volumes:
-      - ./goocommerce-db:/flyway/sql:ro
+      - ./cwmerch-db:/flyway/sql:ro
 
   api:
     build:
       context: .
       target: api
-    image: ${REGISTRY:-registry.cwcloud.tech}/goocommerce-api:${VERSION:-latest}
+    image: ${REGISTRY:-registry.cwcloud.tech}/cwmerch-api:${VERSION:-latest}
     depends_on:
       flyway:
         condition: service_completed_successfully
@@ -68,12 +68,12 @@ services:
     build:
       context: .
       target: ui
-    image: ${REGISTRY:-registry.cwcloud.tech}/goocommerce-ui:${VERSION:-latest}
+    image: ${REGISTRY:-registry.cwcloud.tech}/cwmerch-ui:${VERSION:-latest}
     depends_on:
       - api
     environment:
-      GOOCOMMERCE_API_URL: ${GOOCOMMERCE_API_URL:-http://localhost:8080}
-      GOOCOMMERCE_API_INTERNAL_URL: http://api:8080
+      CWMERCH_API_URL: ${CWMERCH_API_URL:-http://localhost:8080}
+      CWMERCH_API_INTERNAL_URL: http://api:8080
     ports:
       - "3000:80"
 

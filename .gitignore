@@ -4,6 +4,6 @@ build/
 .env
 .DS_Store
 *.log
-goocommerce-api/storage/
-goocommerce-api/goocommerce-api
+cwmerch-api/storage/
+cwmerch-api/cwmerch-api
 .claude

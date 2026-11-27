@@ -1,47 +1,31 @@
-# Validate on every push, deliver the images to the registry on main.
-# Delivery only: no deployment stage.
 stages:
-  - validate
-  - deliver
+  - publish
+  - build
 
-api-test:
-  stage: validate
-  image: golang:1.26-alpine
-  rules:
-    - changes: [goocommerce-api/**/*]
+mirror:
+  stage: publish
   script:
-    - cd goocommerce-api
-    - test -z "$(gofmt -l .)"
-    - go vet ./...
-    - go test ./... -count=1
+    - setsid ./ci/mirror.sh
+  rules:
+    - if: $CI_COMMIT_BRANCH =~ /^main$/
+  tags:
+    - mirror
+
+build:
+  stage: build
   tags:
     - imagesbuilder
-
-ui-lint-build:
-  stage: validate
-  image: node:22-alpine
   rules:
-    - changes: [goocommerce-ui/**/*]
+    - if: $CI_COMMIT_BRANCH =~ /^main$/
+      changes:
+        - ci/**/*
+        - cwmerch-api/**/*
+        - cwmerch-ui/**/*
+        - cwmerch-db/**/*
+        - .docker/**/*
+        - Dockerfile
+        - docker-compose*.yml
+        - VERSION
   script:
-    - npm i -g pnpm@latest
-    - cd goocommerce-ui
-    - pnpm install --frozen-lockfile
-    - pnpm run lint
-    - pnpm run build
-  tags:
-    - imagesbuilder
-
-deliver:
-  stage: deliver
-  image: docker:latest
-  services:
-    - docker:dind
-  rules:
-    - if: $CI_COMMIT_BRANCH == "main"
-      changes: [goocommerce-api/**/*, goocommerce-ui/**/*, .docker/**/*, Dockerfile, VERSION, docker-compose-build.yml]
-  before_script:
-    - apk add --no-cache bash git
-  script:
-    - ./ci/app/deliver.sh
-  tags:
-    - imagesbuilder
+    - setsid ./ci/prune.sh
+    - setsid ./ci/deliver.sh

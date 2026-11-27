@@ -1,63 +1,78 @@
-"""Rebuild the goocommerce logo: the CWCloud octopus (octopus-base.png, from
-cwclock) with its clock replaced by a shopping basket (logo-basket.svg).
-
-macOS only (renders the SVG with Quick Look); needs Pillow and numpy.
-    cd img && python3 make_logo.py
-The basket is rendered on white and on black, and its transparency recovered
-from the difference, because Quick Look always paints a background.
-"""
-import os, subprocess, tempfile
+"""Build cwmerch's transparent logos from ai-gen/assets/logo.jpeg: python3 img/make_logo.py"""
+import os
 import numpy as np
-from PIL import Image, ImageDraw
-
 HERE = os.path.dirname(os.path.abspath(__file__))
-S = 2  # supersampling
+from PIL import Image
+from scipy import ndimage as ndi
+src = Image.open(os.path.join(HERE, '..', 'ai-gen', 'assets', 'logo.jpeg')).convert('RGB')
+a = np.asarray(src).astype(float)
+mn, mx = a.min(2), a.max(2)
+whiteish = (mn >= 226) & ((mx - mn) <= 20)
+lab, _ = ndi.label(whiteish)
+border = set(np.unique(np.concatenate([lab[0], lab[-1], lab[:, 0], lab[:, -1]]))) - {0}
+holes = set()
+for i, sl in enumerate(ndi.find_objects(lab), 1):
+    if sl is None or i in border:
+        continue
+    # enclosed white pockets that are background: the cart's grid cells and the
+    # gap between a tentacle and the basket (the eyes stay opaque)
+    if sl[1].start > 1500 or sl[0].start > 1000:
+        holes.add(i)
+bg = np.isin(lab, list(border | holes))
+# small holes enclosed by the shape stay opaque; only the outside background goes
+dist = ndi.distance_transform_edt(~bg)  # distance of foreground px to background
+alpha = np.ones(mn.shape)
+alpha[bg] = 0.0
+band = (~bg) & (dist <= 3)
+soft = np.clip((255 - mn) / (255 - 175), 0, 1)
+alpha[band] = soft[band]
+# un-mix the white from the soft edge so it doesn't halo on dark backgrounds
+rgb = a.copy()
+m = band & (alpha > 0.02)
+for c in range(3):
+    ch = rgb[..., c]
+    ch[m] = np.clip((a[..., c][m] - (1 - alpha[m]) * 255) / alpha[m], 0, 255)
+# 1px smoothing of alpha edges
+alpha = ndi.gaussian_filter(alpha, 0.6) * (dist > 0) + 0 * bg
+alpha[(~bg) & (dist > 3)] = 1.0
+out = np.dstack([rgb, alpha * 255]).astype(np.uint8)
+img = Image.fromarray(out, 'RGBA')
+bbox = img.getbbox()
+img = img.crop(bbox)
+pad = 24
+canvas = Image.new('RGBA', (img.width + 2 * pad, img.height + 2 * pad), (0, 0, 0, 0))
+canvas.alpha_composite(img, (pad, pad))
+canvas.save(os.path.join(HERE, 'cwmerch-logo.png'), optimize=True)
+# mascot only: the largest opaque component, plus the pieces inside its box
+opaque = np.asarray(canvas)[..., 3] > 20
+olab, _ = ndi.label(opaque)
+sizes = ndi.sum(opaque, olab, range(1, olab.max() + 1))
+main = int(np.argmax(sizes)) + 1
+sl = ndi.find_objects(olab)[main - 1]
+x0, x1, y0, y1 = sl[1].start, sl[1].stop, sl[0].start, sl[0].stop
+keep = np.zeros_like(opaque)
+for i, s2 in enumerate(ndi.find_objects(olab), 1):
+    if s2 is not None and s2[1].start >= x0 and s2[1].stop <= x1 and s2[0].start >= y0 and s2[0].stop <= y1:
+        keep |= olab == i
+arr = np.asarray(canvas).copy()
+arr[..., 3] = np.where(keep, arr[..., 3], 0)
+mascot = Image.fromarray(arr, 'RGBA').crop((x0, y0, x1, y1))
+x = x1
+side = max(mascot.size) + 40
+sq = Image.new('RGBA', (side, side), (0, 0, 0, 0))
+sq.alpha_composite(mascot, ((side - mascot.width) // 2, (side - mascot.height) // 2))
+for size, name in [(1024, 'cwmerch-icon-1024.png'), (512, 'cwmerch-icon-512.png'), (180, 'apple-touch-icon.png')]:
+    sq.resize((size, size), Image.LANCZOS).save(os.path.join(HERE, name), optimize=True)
+sq.resize((64, 64), Image.LANCZOS).save(os.path.join(HERE, 'favicon.ico'), sizes=[(16, 16), (32, 32), (48, 48), (64, 64)])
+canvas.resize((canvas.width // 2, canvas.height // 2), Image.LANCZOS).save(os.path.join(HERE, 'cwmerch-logo-small.png'), optimize=True)
+print(canvas.size, x, sq.size)
 
-
-def render(svg, out_dir):
-    subprocess.run(["qlmanage", "-t", "-s", "1502", "-o", out_dir, svg],
-                   check=True, capture_output=True)
-    return os.path.join(out_dir, os.path.basename(svg) + ".png")
-
-
-def basket_rgba(tmp):
-    src = open(os.path.join(HERE, "logo-basket.svg")).read()
-    white = os.path.join(tmp, "white.svg")
-    black = os.path.join(tmp, "black.svg")
-    open(white, "w").write(src)
-    open(black, "w").write(src.replace("<defs>", '<rect width="751" height="751" fill="#000"/><defs>', 1))
-    w = np.asarray(Image.open(render(white, tmp)).convert("RGB")).astype(float)
-    k = np.asarray(Image.open(render(black, tmp)).convert("RGB")).astype(float)
-    a = np.clip(1 - (w - k).mean(axis=2) / 255.0, 0, 1)
-    rgb = np.where(a[..., None] > 0.001, k / np.maximum(a[..., None], 1e-3), 0)
-    return Image.fromarray(np.dstack([np.clip(rgb, 0, 255), a * 255]).astype("uint8"), "RGBA")
-
-
-def main():
-    base = Image.open(os.path.join(HERE, "octopus-base.png")).convert("RGBA")
-    big = base.resize((base.width * S, base.height * S), Image.LANCZOS)
-    with tempfile.TemporaryDirectory() as tmp:
-        out = big.copy()
-        out.alpha_composite(basket_rgba(tmp).crop((0, 0, big.width, big.height)))
-
-    def relayer(poly):  # bring a gripping tentacle back in front of the basket
-        mask = Image.new("L", big.size, 0)
-        ImageDraw.Draw(mask).polygon([(x * S, y * S) for x, y in poly], fill=255)
-        out.paste(big, (0, 0), mask)
-
-    relayer([(460, 486), (478, 476), (500, 494), (508, 530), (507, 566), (495, 602),
-             (456, 614), (438, 606), (452, 580), (462, 548), (464, 512)])
-    relayer([(282, 515), (332, 512), (348, 518), (350, 546), (338, 560), (300, 566), (282, 560)])
-    logo = out.resize(base.size, Image.LANCZOS)
-    logo.save(os.path.join(HERE, "goocommerce-logo.png"))
-    square = Image.new("RGBA", (751, 751), (0, 0, 0, 0))
-    square.alpha_composite(logo, ((751 - logo.width) // 2, 0))
-    for size, name in [(1024, "goocommerce-logo-1024.png"), (512, "goocommerce-logo-512.png"),
-                       (180, "apple-touch-icon.png")]:
-        square.resize((size, size), Image.LANCZOS).save(os.path.join(HERE, name))
-    square.resize((48, 48), Image.LANCZOS).save(os.path.join(HERE, "favicon.ico"),
-                                               sizes=[(16, 16), (32, 32), (48, 48)])
-
-
-if __name__ == "__main__":
-    main()
+# SVG wrappers (the artwork is raster: the SVG embeds the transparent PNG)
+import base64, io
+for png, svg, label in [('cwmerch-logo.png', 'cwmerch-logo.svg', 'cwmerch logo'), ('cwmerch-icon-512.png', 'cwmerch-icon.svg', 'cwmerch')]:
+    im = Image.open(os.path.join(HERE, png))
+    buf = io.BytesIO()
+    im.save(buf, 'PNG', optimize=True)
+    b64 = base64.b64encode(buf.getvalue()).decode()
+    with open(os.path.join(HERE, svg), 'w') as f:
+        f.write(f'<svg xmlns="http://www.w3.org/2000/svg" width="{im.width}" height="{im.height}" viewBox="0 0 {im.width} {im.height}" role="img" aria-label="{label}"><title>{label}</title><image width="{im.width}" height="{im.height}" href="data:image/png;base64,{b64}"/></svg>\n')

@@ -1,0 +1,307 @@
+-- ============================================================================
+-- cwmerch - V3: WordPress + WooCommerce default data
+-- ============================================================================
+--
+-- Seeds the defaults a fresh WordPress + WooCommerce (11.3.1) install has, so a
+-- cwmerch-only deployment starts from the same state. Idempotent and safe
+-- on an existing, populated WooCommerce database: it only ever INSERTs missing
+-- rows (INSERT IGNORE on the unique option_name / (term_id, taxonomy) keys, or
+-- INSERT ... SELECT ... WHERE NOT EXISTS) and never overwrites a value.
+--
+-- Deviations from a stock WooCommerce install (only applied when missing):
+--   woocommerce_currency=EUR, woocommerce_default_country=FR, kg/cm units,
+--   timezone_string=UTC, woocommerce_custom_orders_table_data_sync_enabled=no,
+--   placeholder siteurl/home/blogname/admin_email (edit them after install).
+--
+-- PHP-serialized values (user roles, payment gateway settings) were produced
+-- by WordPress/WooCommerce themselves; their s:<len> byte counts must stay
+-- exact if you ever copy them. They contain no dollar-brace sequence, so
+-- they cannot clash with Flyway placeholder replacement.
+--
+-- Never edit this file once released (Flyway checksums it).
+-- ============================================================================
+
+-- WordPress core options (the user_roles option name carries the table prefix, like WP)
+INSERT IGNORE INTO `${table_prefix}options` (`option_name`, `option_value`, `autoload`) VALUES
+  ('siteurl', 'http://localhost', 'on'),
+  ('home', 'http://localhost', 'on'),
+  ('blogname', 'cwmerch', 'on'),
+  ('blogdescription', '', 'on'),
+  ('admin_email', 'admin@example.com', 'on'),
+  ('date_format', 'F j, Y', 'on'),
+  ('time_format', 'g:i a', 'on'),
+  ('timezone_string', 'UTC', 'on'),
+  ('gmt_offset', '0', 'on'),
+  ('start_of_week', '1', 'on'),
+  ('db_version', '61833', 'on'),
+  ('initial_db_version', '61833', 'on'),
+  ('${table_prefix}user_roles', 'a:7:{s:13:"administrator";a:2:{s:4:"name";s:13:"Administrator";s:12:"capabilities";a:115:{s:13:"switch_themes";b:1;s:11:"edit_themes";b:1;s:16:"activate_plugins";b:1;s:12:"edit_plugins";b:1;s:10:"edit_users";b:1;s:10:"edit_files";b:1;s:14:"manage_options";b:1;s:17:"moderate_comments";b:1;s:17:"manage_categories";b:1;s:12:"manage_links";b:1;s:12:"upload_files";b:1;s:6:"import";b:1;s:15:"unfiltered_html";b:1;s:10:"edit_posts";b:1;s:17:"edit_others_posts";b:1;s:20:"edit_published_posts";b:1;s:13:"publish_posts";b:1;s:10:"edit_pages";b:1;s:4:"read";b:1;s:8:"level_10";b:1;s:7:"level_9";b:1;s:7:"level_8";b:1;s:7:"level_7";b:1;s:7:"level_6";b:1;s:7:"level_5";b:1;s:7:"level_4";b:1;s:7:"level_3";b:1;s:7:"level_2";b:1;s:7:"level_1";b:1;s:7:"level_0";b:1;s:17:"edit_others_pages";b:1;s:20:"edit_published_pages";b:1;s:13:"publish_pages";b:1;s:12:"delete_pages";b:1;s:19:"delete_others_pages";b:1;s:22:"delete_published_pages";b:1;s:12:"delete_posts";b:1;s:19:"delete_others_posts";b:1;s:22:"delete_published_posts";b:1;s:20:"delete_private_posts";b:1;s:18:"edit_private_posts";b:1;s:18:"read_private_posts";b:1;s:20:"delete_private_pages";b:1;s:18:"edit_private_pages";b:1;s:18:"read_private_pages";b:1;s:12:"delete_users";b:1;s:12:"create_users";b:1;s:17:"unfiltered_upload";b:1;s:14:"edit_dashboard";b:1;s:14:"update_plugins";b:1;s:14:"delete_plugins";b:1;s:15:"install_plugins";b:1;s:13:"update_themes";b:1;s:14:"install_themes";b:1;s:11:"update_core";b:1;s:10:"list_users";b:1;s:12:"remove_users";b:1;s:13:"promote_users";b:1;s:18:"edit_theme_options";b:1;s:13:"delete_themes";b:1;s:6:"export";b:1;s:18:"manage_woocommerce";b:1;s:16:"create_customers";b:1;s:24:"view_woocommerce_reports";b:1;s:12:"edit_product";b:1;s:12:"read_product";b:1;s:14:"delete_product";b:1;s:13:"edit_products";b:1;s:20:"edit_others_products";b:1;s:16:"publish_products";b:1;s:21:"read_private_products";b:1;s:15:"delete_products";b:1;s:23:"delete_private_products";b:1;s:25:"delete_published_products";b:1;s:22:"delete_others_products";b:1;s:21:"edit_private_products";b:1;s:23:"edit_published_products";b:1;s:20:"manage_product_terms";b:1;s:18:"edit_product_terms";b:1;s:20:"delete_product_terms";b:1;s:20:"assign_product_terms";b:1;s:15:"edit_shop_order";b:1;s:15:"read_shop_order";b:1;s:17:"delete_shop_order";b:1;s:16:"edit_shop_orders";b:1;s:23:"edit_others_shop_orders";b:1;s:19:"publish_shop_orders";b:1;s:24:"read_private_shop_orders";b:1;s:18:"delete_shop_orders";b:1;s:26:"delete_private_shop_orders";b:1;s:28:"delete_published_shop_orders";b:1;s:25:"delete_others_shop_orders";b:1;s:24:"edit_private_shop_orders";b:1;s:26:"edit_published_shop_orders";b:1;s:23:"manage_shop_order_terms";b:1;s:21:"edit_shop_order_terms";b:1;s:23:"delete_shop_order_terms";b:1;s:23:"assign_shop_order_terms";b:1;s:16:"edit_shop_coupon";b:1;s:16:"read_shop_coupon";b:1;s:18:"delete_shop_coupon";b:1;s:17:"edit_shop_coupons";b:1;s:24:"edit_others_shop_coupons";b:1;s:20:"publish_shop_coupons";b:1;s:25:"read_private_shop_coupons";b:1;s:19:"delete_shop_coupons";b:1;s:27:"delete_private_shop_coupons";b:1;s:29:"delete_published_shop_coupons";b:1;s:26:"delete_others_shop_coupons";b:1;s:25:"edit_private_shop_coupons";b:1;s:27:"edit_published_shop_coupons";b:1;s:24:"manage_shop_coupon_terms";b:1;s:22:"edit_shop_coupon_terms";b:1;s:24:"delete_shop_coupon_terms";b:1;s:24:"assign_shop_coupon_terms";b:1;}}s:6:"editor";a:2:{s:4:"name";s:6:"Editor";s:12:"capabilities";a:34:{s:17:"moderate_comments";b:1;s:17:"manage_categories";b:1;s:12:"manage_links";b:1;s:12:"upload_files";b:1;s:15:"unfiltered_html";b:1;s:10:"edit_posts";b:1;s:17:"edit_others_posts";b:1;s:20:"edit_published_posts";b:1;s:13:"publish_posts";b:1;s:10:"edit_pages";b:1;s:4:"read";b:1;s:7:"level_7";b:1;s:7:"level_6";b:1;s:7:"level_5";b:1;s:7:"level_4";b:1;s:7:"level_3";b:1;s:7:"level_2";b:1;s:7:"level_1";b:1;s:7:"level_0";b:1;s:17:"edit_others_pages";b:1;s:20:"edit_published_pages";b:1;s:13:"publish_pages";b:1;s:12:"delete_pages";b:1;s:19:"delete_others_pages";b:1;s:22:"delete_published_pages";b:1;s:12:"delete_posts";b:1;s:19:"delete_others_posts";b:1;s:22:"delete_published_posts";b:1;s:20:"delete_private_posts";b:1;s:18:"edit_private_posts";b:1;s:18:"read_private_posts";b:1;s:20:"delete_private_pages";b:1;s:18:"edit_private_pages";b:1;s:18:"read_private_pages";b:1;}}s:6:"author";a:2:{s:4:"name";s:6:"Author";s:12:"capabilities";a:10:{s:12:"upload_files";b:1;s:10:"edit_posts";b:1;s:20:"edit_published_posts";b:1;s:13:"publish_posts";b:1;s:4:"read";b:1;s:7:"level_2";b:1;s:7:"level_1";b:1;s:7:"level_0";b:1;s:12:"delete_posts";b:1;s:22:"delete_published_posts";b:1;}}s:11:"contributor";a:2:{s:4:"name";s:11:"Contributor";s:12:"capabilities";a:5:{s:10:"edit_posts";b:1;s:4:"read";b:1;s:7:"level_1";b:1;s:7:"level_0";b:1;s:12:"delete_posts";b:1;}}s:10:"subscriber";a:2:{s:4:"name";s:10:"Subscriber";s:12:"capabilities";a:2:{s:4:"read";b:1;s:7:"level_0";b:1;}}s:8:"customer";a:2:{s:4:"name";s:8:"Customer";s:12:"capabilities";a:1:{s:4:"read";b:1;}}s:12:"shop_manager";a:2:{s:4:"name";s:12:"Shop manager";s:12:"capabilities";a:93:{s:7:"level_9";b:1;s:7:"level_8";b:1;s:7:"level_7";b:1;s:7:"level_6";b:1;s:7:"level_5";b:1;s:7:"level_4";b:1;s:7:"level_3";b:1;s:7:"level_2";b:1;s:7:"level_1";b:1;s:7:"level_0";b:1;s:4:"read";b:1;s:18:"read_private_pages";b:1;s:18:"read_private_posts";b:1;s:10:"edit_posts";b:1;s:10:"edit_pages";b:1;s:20:"edit_published_posts";b:1;s:20:"edit_published_pages";b:1;s:18:"edit_private_pages";b:1;s:18:"edit_private_posts";b:1;s:17:"edit_others_posts";b:1;s:17:"edit_others_pages";b:1;s:13:"publish_posts";b:1;s:13:"publish_pages";b:1;s:12:"delete_posts";b:1;s:12:"delete_pages";b:1;s:20:"delete_private_pages";b:1;s:20:"delete_private_posts";b:1;s:22:"delete_published_pages";b:1;s:22:"delete_published_posts";b:1;s:19:"delete_others_posts";b:1;s:19:"delete_others_pages";b:1;s:17:"manage_categories";b:1;s:12:"manage_links";b:1;s:17:"moderate_comments";b:1;s:12:"upload_files";b:1;s:6:"export";b:1;s:6:"import";b:1;s:10:"list_users";b:1;s:18:"edit_theme_options";b:1;s:18:"manage_woocommerce";b:1;s:16:"create_customers";b:1;s:24:"view_woocommerce_reports";b:1;s:12:"edit_product";b:1;s:12:"read_product";b:1;s:14:"delete_product";b:1;s:13:"edit_products";b:1;s:20:"edit_others_products";b:1;s:16:"publish_products";b:1;s:21:"read_private_products";b:1;s:15:"delete_products";b:1;s:23:"delete_private_products";b:1;s:25:"delete_published_products";b:1;s:22:"delete_others_products";b:1;s:21:"edit_private_products";b:1;s:23:"edit_published_products";b:1;s:20:"manage_product_terms";b:1;s:18:"edit_product_terms";b:1;s:20:"delete_product_terms";b:1;s:20:"assign_product_terms";b:1;s:15:"edit_shop_order";b:1;s:15:"read_shop_order";b:1;s:17:"delete_shop_order";b:1;s:16:"edit_shop_orders";b:1;s:23:"edit_others_shop_orders";b:1;s:19:"publish_shop_orders";b:1;s:24:"read_private_shop_orders";b:1;s:18:"delete_shop_orders";b:1;s:26:"delete_private_shop_orders";b:1;s:28:"delete_published_shop_orders";b:1;s:25:"delete_others_shop_orders";b:1;s:24:"edit_private_shop_orders";b:1;s:26:"edit_published_shop_orders";b:1;s:23:"manage_shop_order_terms";b:1;s:21:"edit_shop_order_terms";b:1;s:23:"delete_shop_order_terms";b:1;s:23:"assign_shop_order_terms";b:1;s:16:"edit_shop_coupon";b:1;s:16:"read_shop_coupon";b:1;s:18:"delete_shop_coupon";b:1;s:17:"edit_shop_coupons";b:1;s:24:"edit_others_shop_coupons";b:1;s:20:"publish_shop_coupons";b:1;s:25:"read_private_shop_coupons";b:1;s:19:"delete_shop_coupons";b:1;s:27:"delete_private_shop_coupons";b:1;s:29:"delete_published_shop_coupons";b:1;s:26:"delete_others_shop_coupons";b:1;s:25:"edit_private_shop_coupons";b:1;s:27:"edit_published_shop_coupons";b:1;s:24:"manage_shop_coupon_terms";b:1;s:22:"edit_shop_coupon_terms";b:1;s:24:"delete_shop_coupon_terms";b:1;s:24:"assign_shop_coupon_terms";b:1;}}}', 'on');
+
+-- WooCommerce options
+INSERT IGNORE INTO `${table_prefix}options` (`option_name`, `option_value`, `autoload`) VALUES
+  ('woocommerce_store_address', '', 'on'),
+  ('woocommerce_store_address_2', '', 'on'),
+  ('woocommerce_store_city', '', 'on'),
+  ('woocommerce_store_postcode', '', 'on'),
+  ('woocommerce_default_country', 'FR', 'on'),
+  ('woocommerce_currency', 'EUR', 'on'),
+  ('woocommerce_currency_pos', 'left', 'on'),
+  ('woocommerce_price_thousand_sep', ',', 'on'),
+  ('woocommerce_price_decimal_sep', '.', 'on'),
+  ('woocommerce_price_num_decimals', '2', 'on'),
+  ('woocommerce_calc_taxes', 'no', 'on'),
+  ('woocommerce_prices_include_tax', 'no', 'on'),
+  ('woocommerce_tax_display_shop', 'excl', 'on'),
+  ('woocommerce_tax_display_cart', 'excl', 'on'),
+  ('woocommerce_tax_based_on', 'shipping', 'on'),
+  ('woocommerce_tax_round_at_subtotal', 'no', 'on'),
+  ('woocommerce_shipping_tax_class', 'inherit', 'on'),
+  ('woocommerce_tax_classes', '', 'on'),
+  ('woocommerce_enable_coupons', 'yes', 'on'),
+  ('woocommerce_calc_discounts_sequentially', 'no', 'off'),
+  ('woocommerce_enable_reviews', 'yes', 'on'),
+  ('woocommerce_review_rating_verification_required', 'no', 'off'),
+  ('woocommerce_enable_review_rating', 'yes', 'on'),
+  ('woocommerce_review_rating_required', 'yes', 'off'),
+  ('woocommerce_manage_stock', 'yes', 'on'),
+  ('woocommerce_notify_low_stock_amount', '2', 'off'),
+  ('woocommerce_notify_no_stock_amount', '0', 'on'),
+  ('woocommerce_hold_stock_minutes', '60', 'off'),
+  ('woocommerce_weight_unit', 'kg', 'on'),
+  ('woocommerce_dimension_unit', 'cm', 'on'),
+  ('woocommerce_allowed_countries', 'all', 'on'),
+  ('woocommerce_all_except_countries', '', 'on'),
+  ('woocommerce_specific_allowed_countries', '', 'on'),
+  ('woocommerce_ship_to_countries', '', 'on'),
+  ('woocommerce_specific_ship_to_countries', '', 'on'),
+  ('woocommerce_enable_guest_checkout', 'yes', 'off'),
+  ('woocommerce_enable_signup_and_login_from_checkout', 'no', 'off'),
+  ('woocommerce_custom_orders_table_enabled', 'yes', 'on'),
+  ('woocommerce_custom_orders_table_data_sync_enabled', 'no', 'on'),
+  ('woocommerce_bacs_settings', 'a:7:{s:7:"enabled";s:2:"no";s:5:"title";s:20:"Direct bank transfer";s:11:"description";s:176:"Make your payment directly into our bank account. Please use your Order ID as the payment reference. Your order will not be shipped until the funds have cleared in our account.";s:12:"instructions";s:0:"";s:18:"enable_for_methods";s:0:"";s:18:"enable_for_virtual";s:3:"yes";s:15:"account_details";s:0:"";}', 'on'),
+  ('woocommerce_cheque_settings', 'a:6:{s:7:"enabled";s:2:"no";s:5:"title";s:14:"Check payments";s:11:"description";s:98:"Please send a check to Store Name, Store Street, Store Town, Store State / County, Store Postcode.";s:12:"instructions";s:0:"";s:18:"enable_for_methods";s:0:"";s:18:"enable_for_virtual";s:3:"yes";}', 'on'),
+  ('woocommerce_cod_settings', 'a:6:{s:7:"enabled";s:2:"no";s:5:"title";s:16:"Cash on delivery";s:11:"description";s:28:"Pay with cash upon delivery.";s:12:"instructions";s:28:"Pay with cash upon delivery.";s:18:"enable_for_methods";s:0:"";s:18:"enable_for_virtual";s:3:"yes";}', 'on'),
+  ('woocommerce_db_version', '11.3.1', 'auto'),
+  ('woocommerce_version', '11.3.1', 'auto');
+
+-- The e-mail sender defaults to the site's name / admin e-mail, like WooCommerce.
+INSERT IGNORE INTO `${table_prefix}options` (`option_name`, `option_value`, `autoload`)
+  SELECT 'woocommerce_email_from_name', `option_value`, 'off' FROM `${table_prefix}options` WHERE `option_name` = 'blogname';
+INSERT IGNORE INTO `${table_prefix}options` (`option_name`, `option_value`, `autoload`)
+  SELECT 'woocommerce_email_from_address', `option_value`, 'off' FROM `${table_prefix}options` WHERE `option_name` = 'admin_email';
+
+-- ----------------------------------------------------------------------------
+-- Taxonomy terms. Term ids are auto-increment and differ per instance, so each
+-- term is found/created by (slug, taxonomy):
+--   1. create the wp_terms row unless a term with that slug is already
+--      attached to that taxonomy, or an orphan term with that slug exists;
+--   2. attach the newest orphan term with that slug to the taxonomy.
+-- (Several terms may share a slug across taxonomies, e.g. "uncategorized" for
+-- both category and product_cat, exactly like WordPress does.)
+-- ----------------------------------------------------------------------------
+
+-- product_type: simple
+INSERT INTO `${table_prefix}terms` (`name`, `slug`, `term_group`)
+  SELECT 'simple', 'simple', 0 FROM DUAL
+  WHERE NOT EXISTS (SELECT 1 FROM `${table_prefix}terms` t JOIN `${table_prefix}term_taxonomy` tt ON tt.`term_id` = t.`term_id`
+                    WHERE t.`slug` = 'simple' AND tt.`taxonomy` = 'product_type')
+    AND NOT EXISTS (SELECT 1 FROM `${table_prefix}terms` t LEFT JOIN `${table_prefix}term_taxonomy` tt ON tt.`term_id` = t.`term_id`
+                    WHERE t.`slug` = 'simple' AND tt.`term_id` IS NULL);
+INSERT IGNORE INTO `${table_prefix}term_taxonomy` (`term_id`, `taxonomy`, `description`, `parent`, `count`)
+  SELECT MAX(t.`term_id`), 'product_type', '', 0, 0 FROM `${table_prefix}terms` t LEFT JOIN `${table_prefix}term_taxonomy` tt ON tt.`term_id` = t.`term_id`
+  WHERE t.`slug` = 'simple' AND tt.`term_id` IS NULL
+    AND NOT EXISTS (SELECT 1 FROM `${table_prefix}terms` t2 JOIN `${table_prefix}term_taxonomy` tt2 ON tt2.`term_id` = t2.`term_id`
+                    WHERE t2.`slug` = 'simple' AND tt2.`taxonomy` = 'product_type')
+  HAVING MAX(t.`term_id`) IS NOT NULL;
+
+-- product_type: grouped
+INSERT INTO `${table_prefix}terms` (`name`, `slug`, `term_group`)
+  SELECT 'grouped', 'grouped', 0 FROM DUAL
+  WHERE NOT EXISTS (SELECT 1 FROM `${table_prefix}terms` t JOIN `${table_prefix}term_taxonomy` tt ON tt.`term_id` = t.`term_id`
+                    WHERE t.`slug` = 'grouped' AND tt.`taxonomy` = 'product_type')
+    AND NOT EXISTS (SELECT 1 FROM `${table_prefix}terms` t LEFT JOIN `${table_prefix}term_taxonomy` tt ON tt.`term_id` = t.`term_id`
+                    WHERE t.`slug` = 'grouped' AND tt.`term_id` IS NULL);
+INSERT IGNORE INTO `${table_prefix}term_taxonomy` (`term_id`, `taxonomy`, `description`, `parent`, `count`)
+  SELECT MAX(t.`term_id`), 'product_type', '', 0, 0 FROM `${table_prefix}terms` t LEFT JOIN `${table_prefix}term_taxonomy` tt ON tt.`term_id` = t.`term_id`
+  WHERE t.`slug` = 'grouped' AND tt.`term_id` IS NULL
+    AND NOT EXISTS (SELECT 1 FROM `${table_prefix}terms` t2 JOIN `${table_prefix}term_taxonomy` tt2 ON tt2.`term_id` = t2.`term_id`
+                    WHERE t2.`slug` = 'grouped' AND tt2.`taxonomy` = 'product_type')
+  HAVING MAX(t.`term_id`) IS NOT NULL;
+
+-- product_type: variable
+INSERT INTO `${table_prefix}terms` (`name`, `slug`, `term_group`)
+  SELECT 'variable', 'variable', 0 FROM DUAL
+  WHERE NOT EXISTS (SELECT 1 FROM `${table_prefix}terms` t JOIN `${table_prefix}term_taxonomy` tt ON tt.`term_id` = t.`term_id`
+                    WHERE t.`slug` = 'variable' AND tt.`taxonomy` = 'product_type')
+    AND NOT EXISTS (SELECT 1 FROM `${table_prefix}terms` t LEFT JOIN `${table_prefix}term_taxonomy` tt ON tt.`term_id` = t.`term_id`
+                    WHERE t.`slug` = 'variable' AND tt.`term_id` IS NULL);
+INSERT IGNORE INTO `${table_prefix}term_taxonomy` (`term_id`, `taxonomy`, `description`, `parent`, `count`)
+  SELECT MAX(t.`term_id`), 'product_type', '', 0, 0 FROM `${table_prefix}terms` t LEFT JOIN `${table_prefix}term_taxonomy` tt ON tt.`term_id` = t.`term_id`
+  WHERE t.`slug` = 'variable' AND tt.`term_id` IS NULL
+    AND NOT EXISTS (SELECT 1 FROM `${table_prefix}terms` t2 JOIN `${table_prefix}term_taxonomy` tt2 ON tt2.`term_id` = t2.`term_id`
+                    WHERE t2.`slug` = 'variable' AND tt2.`taxonomy` = 'product_type')
+  HAVING MAX(t.`term_id`) IS NOT NULL;
+
+-- product_type: external
+INSERT INTO `${table_prefix}terms` (`name`, `slug`, `term_group`)
+  SELECT 'external', 'external', 0 FROM DUAL
+  WHERE NOT EXISTS (SELECT 1 FROM `${table_prefix}terms` t JOIN `${table_prefix}term_taxonomy` tt ON tt.`term_id` = t.`term_id`
+                    WHERE t.`slug` = 'external' AND tt.`taxonomy` = 'product_type')
+    AND NOT EXISTS (SELECT 1 FROM `${table_prefix}terms` t LEFT JOIN `${table_prefix}term_taxonomy` tt ON tt.`term_id` = t.`term_id`
+                    WHERE t.`slug` = 'external' AND tt.`term_id` IS NULL);
+INSERT IGNORE INTO `${table_prefix}term_taxonomy` (`term_id`, `taxonomy`, `description`, `parent`, `count`)
+  SELECT MAX(t.`term_id`), 'product_type', '', 0, 0 FROM `${table_prefix}terms` t LEFT JOIN `${table_prefix}term_taxonomy` tt ON tt.`term_id` = t.`term_id`
+  WHERE t.`slug` = 'external' AND tt.`term_id` IS NULL
+    AND NOT EXISTS (SELECT 1 FROM `${table_prefix}terms` t2 JOIN `${table_prefix}term_taxonomy` tt2 ON tt2.`term_id` = t2.`term_id`
+                    WHERE t2.`slug` = 'external' AND tt2.`taxonomy` = 'product_type')
+  HAVING MAX(t.`term_id`) IS NOT NULL;
+
+-- product_visibility: exclude-from-search
+INSERT INTO `${table_prefix}terms` (`name`, `slug`, `term_group`)
+  SELECT 'exclude-from-search', 'exclude-from-search', 0 FROM DUAL
+  WHERE NOT EXISTS (SELECT 1 FROM `${table_prefix}terms` t JOIN `${table_prefix}term_taxonomy` tt ON tt.`term_id` = t.`term_id`
+                    WHERE t.`slug` = 'exclude-from-search' AND tt.`taxonomy` = 'product_visibility')
+    AND NOT EXISTS (SELECT 1 FROM `${table_prefix}terms` t LEFT JOIN `${table_prefix}term_taxonomy` tt ON tt.`term_id` = t.`term_id`
+                    WHERE t.`slug` = 'exclude-from-search' AND tt.`term_id` IS NULL);
+INSERT IGNORE INTO `${table_prefix}term_taxonomy` (`term_id`, `taxonomy`, `description`, `parent`, `count`)
+  SELECT MAX(t.`term_id`), 'product_visibility', '', 0, 0 FROM `${table_prefix}terms` t LEFT JOIN `${table_prefix}term_taxonomy` tt ON tt.`term_id` = t.`term_id`
+  WHERE t.`slug` = 'exclude-from-search' AND tt.`term_id` IS NULL
+    AND NOT EXISTS (SELECT 1 FROM `${table_prefix}terms` t2 JOIN `${table_prefix}term_taxonomy` tt2 ON tt2.`term_id` = t2.`term_id`
+                    WHERE t2.`slug` = 'exclude-from-search' AND tt2.`taxonomy` = 'product_visibility')
+  HAVING MAX(t.`term_id`) IS NOT NULL;
+
+-- product_visibility: exclude-from-catalog
+INSERT INTO `${table_prefix}terms` (`name`, `slug`, `term_group`)
+  SELECT 'exclude-from-catalog', 'exclude-from-catalog', 0 FROM DUAL
+  WHERE NOT EXISTS (SELECT 1 FROM `${table_prefix}terms` t JOIN `${table_prefix}term_taxonomy` tt ON tt.`term_id` = t.`term_id`
+                    WHERE t.`slug` = 'exclude-from-catalog' AND tt.`taxonomy` = 'product_visibility')
+    AND NOT EXISTS (SELECT 1 FROM `${table_prefix}terms` t LEFT JOIN `${table_prefix}term_taxonomy` tt ON tt.`term_id` = t.`term_id`
+                    WHERE t.`slug` = 'exclude-from-catalog' AND tt.`term_id` IS NULL);
+INSERT IGNORE INTO `${table_prefix}term_taxonomy` (`term_id`, `taxonomy`, `description`, `parent`, `count`)
+  SELECT MAX(t.`term_id`), 'product_visibility', '', 0, 0 FROM `${table_prefix}terms` t LEFT JOIN `${table_prefix}term_taxonomy` tt ON tt.`term_id` = t.`term_id`
+  WHERE t.`slug` = 'exclude-from-catalog' AND tt.`term_id` IS NULL
+    AND NOT EXISTS (SELECT 1 FROM `${table_prefix}terms` t2 JOIN `${table_prefix}term_taxonomy` tt2 ON tt2.`term_id` = t2.`term_id`
+                    WHERE t2.`slug` = 'exclude-from-catalog' AND tt2.`taxonomy` = 'product_visibility')
+  HAVING MAX(t.`term_id`) IS NOT NULL;
+
+-- product_visibility: featured
+INSERT INTO `${table_prefix}terms` (`name`, `slug`, `term_group`)
+  SELECT 'featured', 'featured', 0 FROM DUAL
+  WHERE NOT EXISTS (SELECT 1 FROM `${table_prefix}terms` t JOIN `${table_prefix}term_taxonomy` tt ON tt.`term_id` = t.`term_id`
+                    WHERE t.`slug` = 'featured' AND tt.`taxonomy` = 'product_visibility')
+    AND NOT EXISTS (SELECT 1 FROM `${table_prefix}terms` t LEFT JOIN `${table_prefix}term_taxonomy` tt ON tt.`term_id` = t.`term_id`
+                    WHERE t.`slug` = 'featured' AND tt.`term_id` IS NULL);
+INSERT IGNORE INTO `${table_prefix}term_taxonomy` (`term_id`, `taxonomy`, `description`, `parent`, `count`)
+  SELECT MAX(t.`term_id`), 'product_visibility', '', 0, 0 FROM `${table_prefix}terms` t LEFT JOIN `${table_prefix}term_taxonomy` tt ON tt.`term_id` = t.`term_id`
+  WHERE t.`slug` = 'featured' AND tt.`term_id` IS NULL
+    AND NOT EXISTS (SELECT 1 FROM `${table_prefix}terms` t2 JOIN `${table_prefix}term_taxonomy` tt2 ON tt2.`term_id` = t2.`term_id`
+                    WHERE t2.`slug` = 'featured' AND tt2.`taxonomy` = 'product_visibility')
+  HAVING MAX(t.`term_id`) IS NOT NULL;
+
+-- product_visibility: outofstock
+INSERT INTO `${table_prefix}terms` (`name`, `slug`, `term_group`)
+  SELECT 'outofstock', 'outofstock', 0 FROM DUAL
+  WHERE NOT EXISTS (SELECT 1 FROM `${table_prefix}terms` t JOIN `${table_prefix}term_taxonomy` tt ON tt.`term_id` = t.`term_id`
+                    WHERE t.`slug` = 'outofstock' AND tt.`taxonomy` = 'product_visibility')
+    AND NOT EXISTS (SELECT 1 FROM `${table_prefix}terms` t LEFT JOIN `${table_prefix}term_taxonomy` tt ON tt.`term_id` = t.`term_id`
+                    WHERE t.`slug` = 'outofstock' AND tt.`term_id` IS NULL);
+INSERT IGNORE INTO `${table_prefix}term_taxonomy` (`term_id`, `taxonomy`, `description`, `parent`, `count`)
+  SELECT MAX(t.`term_id`), 'product_visibility', '', 0, 0 FROM `${table_prefix}terms` t LEFT JOIN `${table_prefix}term_taxonomy` tt ON tt.`term_id` = t.`term_id`
+  WHERE t.`slug` = 'outofstock' AND tt.`term_id` IS NULL
+    AND NOT EXISTS (SELECT 1 FROM `${table_prefix}terms` t2 JOIN `${table_prefix}term_taxonomy` tt2 ON tt2.`term_id` = t2.`term_id`
+                    WHERE t2.`slug` = 'outofstock' AND tt2.`taxonomy` = 'product_visibility')
+  HAVING MAX(t.`term_id`) IS NOT NULL;
+
+-- product_visibility: rated-1
+INSERT INTO `${table_prefix}terms` (`name`, `slug`, `term_group`)
+  SELECT 'rated-1', 'rated-1', 0 FROM DUAL
+  WHERE NOT EXISTS (SELECT 1 FROM `${table_prefix}terms` t JOIN `${table_prefix}term_taxonomy` tt ON tt.`term_id` = t.`term_id`
+                    WHERE t.`slug` = 'rated-1' AND tt.`taxonomy` = 'product_visibility')
+    AND NOT EXISTS (SELECT 1 FROM `${table_prefix}terms` t LEFT JOIN `${table_prefix}term_taxonomy` tt ON tt.`term_id` = t.`term_id`
+                    WHERE t.`slug` = 'rated-1' AND tt.`term_id` IS NULL);
+INSERT IGNORE INTO `${table_prefix}term_taxonomy` (`term_id`, `taxonomy`, `description`, `parent`, `count`)
+  SELECT MAX(t.`term_id`), 'product_visibility', '', 0, 0 FROM `${table_prefix}terms` t LEFT JOIN `${table_prefix}term_taxonomy` tt ON tt.`term_id` = t.`term_id`
+  WHERE t.`slug` = 'rated-1' AND tt.`term_id` IS NULL
+    AND NOT EXISTS (SELECT 1 FROM `${table_prefix}terms` t2 JOIN `${table_prefix}term_taxonomy` tt2 ON tt2.`term_id` = t2.`term_id`
+                    WHERE t2.`slug` = 'rated-1' AND tt2.`taxonomy` = 'product_visibility')
+  HAVING MAX(t.`term_id`) IS NOT NULL;
+
+-- product_visibility: rated-2
+INSERT INTO `${table_prefix}terms` (`name`, `slug`, `term_group`)
+  SELECT 'rated-2', 'rated-2', 0 FROM DUAL
+  WHERE NOT EXISTS (SELECT 1 FROM `${table_prefix}terms` t JOIN `${table_prefix}term_taxonomy` tt ON tt.`term_id` = t.`term_id`
+                    WHERE t.`slug` = 'rated-2' AND tt.`taxonomy` = 'product_visibility')
+    AND NOT EXISTS (SELECT 1 FROM `${table_prefix}terms` t LEFT JOIN `${table_prefix}term_taxonomy` tt ON tt.`term_id` = t.`term_id`
+                    WHERE t.`slug` = 'rated-2' AND tt.`term_id` IS NULL);
+INSERT IGNORE INTO `${table_prefix}term_taxonomy` (`term_id`, `taxonomy`, `description`, `parent`, `count`)
+  SELECT MAX(t.`term_id`), 'product_visibility', '', 0, 0 FROM `${table_prefix}terms` t LEFT JOIN `${table_prefix}term_taxonomy` tt ON tt.`term_id` = t.`term_id`
+  WHERE t.`slug` = 'rated-2' AND tt.`term_id` IS NULL
+    AND NOT EXISTS (SELECT 1 FROM `${table_prefix}terms` t2 JOIN `${table_prefix}term_taxonomy` tt2 ON tt2.`term_id` = t2.`term_id`
+                    WHERE t2.`slug` = 'rated-2' AND tt2.`taxonomy` = 'product_visibility')
+  HAVING MAX(t.`term_id`) IS NOT NULL;
+
+-- product_visibility: rated-3
+INSERT INTO `${table_prefix}terms` (`name`, `slug`, `term_group`)
+  SELECT 'rated-3', 'rated-3', 0 FROM DUAL
+  WHERE NOT EXISTS (SELECT 1 FROM `${table_prefix}terms` t JOIN `${table_prefix}term_taxonomy` tt ON tt.`term_id` = t.`term_id`
+                    WHERE t.`slug` = 'rated-3' AND tt.`taxonomy` = 'product_visibility')
+    AND NOT EXISTS (SELECT 1 FROM `${table_prefix}terms` t LEFT JOIN `${table_prefix}term_taxonomy` tt ON tt.`term_id` = t.`term_id`
+                    WHERE t.`slug` = 'rated-3' AND tt.`term_id` IS NULL);
+INSERT IGNORE INTO `${table_prefix}term_taxonomy` (`term_id`, `taxonomy`, `description`, `parent`, `count`)
+  SELECT MAX(t.`term_id`), 'product_visibility', '', 0, 0 FROM `${table_prefix}terms` t LEFT JOIN `${table_prefix}term_taxonomy` tt ON tt.`term_id` = t.`term_id`
+  WHERE t.`slug` = 'rated-3' AND tt.`term_id` IS NULL
+    AND NOT EXISTS (SELECT 1 FROM `${table_prefix}terms` t2 JOIN `${table_prefix}term_taxonomy` tt2 ON tt2.`term_id` = t2.`term_id`
+                    WHERE t2.`slug` = 'rated-3' AND tt2.`taxonomy` = 'product_visibility')
+  HAVING MAX(t.`term_id`) IS NOT NULL;
+
+-- product_visibility: rated-4
+INSERT INTO `${table_prefix}terms` (`name`, `slug`, `term_group`)
+  SELECT 'rated-4', 'rated-4', 0 FROM DUAL
+  WHERE NOT EXISTS (SELECT 1 FROM `${table_prefix}terms` t JOIN `${table_prefix}term_taxonomy` tt ON tt.`term_id` = t.`term_id`
+                    WHERE t.`slug` = 'rated-4' AND tt.`taxonomy` = 'product_visibility')
+    AND NOT EXISTS (SELECT 1 FROM `${table_prefix}terms` t LEFT JOIN `${table_prefix}term_taxonomy` tt ON tt.`term_id` = t.`term_id`
+                    WHERE t.`slug` = 'rated-4' AND tt.`term_id` IS NULL);
+INSERT IGNORE INTO `${table_prefix}term_taxonomy` (`term_id`, `taxonomy`, `description`, `parent`, `count`)
+  SELECT MAX(t.`term_id`), 'product_visibility', '', 0, 0 FROM `${table_prefix}terms` t LEFT JOIN `${table_prefix}term_taxonomy` tt ON tt.`term_id` = t.`term_id`
+  WHERE t.`slug` = 'rated-4' AND tt.`term_id` IS NULL
+    AND NOT EXISTS (SELECT 1 FROM `${table_prefix}terms` t2 JOIN `${table_prefix}term_taxonomy` tt2 ON tt2.`term_id` = t2.`term_id`
+                    WHERE t2.`slug` = 'rated-4' AND tt2.`taxonomy` = 'product_visibility')
+  HAVING MAX(t.`term_id`) IS NOT NULL;
+
+-- product_visibility: rated-5
+INSERT INTO `${table_prefix}terms` (`name`, `slug`, `term_group`)
+  SELECT 'rated-5', 'rated-5', 0 FROM DUAL
+  WHERE NOT EXISTS (SELECT 1 FROM `${table_prefix}terms` t JOIN `${table_prefix}term_taxonomy` tt ON tt.`term_id` = t.`term_id`
+                    WHERE t.`slug` = 'rated-5' AND tt.`taxonomy` = 'product_visibility')
+    AND NOT EXISTS (SELECT 1 FROM `${table_prefix}terms` t LEFT JOIN `${table_prefix}term_taxonomy` tt ON tt.`term_id` = t.`term_id`
+                    WHERE t.`slug` = 'rated-5' AND tt.`term_id` IS NULL);
+INSERT IGNORE INTO `${table_prefix}term_taxonomy` (`term_id`, `taxonomy`, `description`, `parent`, `count`)
+  SELECT MAX(t.`term_id`), 'product_visibility', '', 0, 0 FROM `${table_prefix}terms` t LEFT JOIN `${table_prefix}term_taxonomy` tt ON tt.`term_id` = t.`term_id`
+  WHERE t.`slug` = 'rated-5' AND tt.`term_id` IS NULL
+    AND NOT EXISTS (SELECT 1 FROM `${table_prefix}terms` t2 JOIN `${table_prefix}term_taxonomy` tt2 ON tt2.`term_id` = t2.`term_id`
+                    WHERE t2.`slug` = 'rated-5' AND tt2.`taxonomy` = 'product_visibility')
+  HAVING MAX(t.`term_id`) IS NOT NULL;
+
+-- product_cat: uncategorized
+INSERT INTO `${table_prefix}terms` (`name`, `slug`, `term_group`)
+  SELECT 'Uncategorized', 'uncategorized', 0 FROM DUAL
+  WHERE NOT EXISTS (SELECT 1 FROM `${table_prefix}terms` t JOIN `${table_prefix}term_taxonomy` tt ON tt.`term_id` = t.`term_id`
+                    WHERE t.`slug` = 'uncategorized' AND tt.`taxonomy` = 'product_cat')
+    AND NOT EXISTS (SELECT 1 FROM `${table_prefix}terms` t LEFT JOIN `${table_prefix}term_taxonomy` tt ON tt.`term_id` = t.`term_id`
+                    WHERE t.`slug` = 'uncategorized' AND tt.`term_id` IS NULL);
+INSERT IGNORE INTO `${table_prefix}term_taxonomy` (`term_id`, `taxonomy`, `description`, `parent`, `count`)
+  SELECT MAX(t.`term_id`), 'product_cat', '', 0, 0 FROM `${table_prefix}terms` t LEFT JOIN `${table_prefix}term_taxonomy` tt ON tt.`term_id` = t.`term_id`
+  WHERE t.`slug` = 'uncategorized' AND tt.`term_id` IS NULL
+    AND NOT EXISTS (SELECT 1 FROM `${table_prefix}terms` t2 JOIN `${table_prefix}term_taxonomy` tt2 ON tt2.`term_id` = t2.`term_id`
+                    WHERE t2.`slug` = 'uncategorized' AND tt2.`taxonomy` = 'product_cat')
+  HAVING MAX(t.`term_id`) IS NOT NULL;
+
+-- default_product_cat -> the product_cat "Uncategorized" term id (oldest one if several).
+INSERT IGNORE INTO `${table_prefix}options` (`option_name`, `option_value`, `autoload`)
+  SELECT 'default_product_cat', MIN(t.`term_id`), 'auto' FROM `${table_prefix}terms` t
+  JOIN `${table_prefix}term_taxonomy` tt ON tt.`term_id` = t.`term_id`
+  WHERE t.`slug` = 'uncategorized' AND tt.`taxonomy` = 'product_cat'
+  HAVING MIN(t.`term_id`) IS NOT NULL;
+
+-- Shipping: the "Locations not covered by your other zones" zone is implicit
+-- (zone_id 0, no row in ${table_prefix}woocommerce_shipping_zones), like WooCommerce.

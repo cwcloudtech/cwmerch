@@ -1,7 +1,7 @@
 # Shared by the SEO locations of default.conf. The original query string is
 # kept after path= (e.g. /v1/seo/html?path=/shop&page=2) and the full
 # original URI is also sent as X-Original-URI.
-proxy_pass ${GOOCOMMERCE_API_INTERNAL_URL};
+proxy_pass ${CWMERCH_API_INTERNAL_URL};
 proxy_set_header Host $host;
 proxy_set_header X-Original-URI $request_uri;
 proxy_set_header X-Forwarded-Host $host;
