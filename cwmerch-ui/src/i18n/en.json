@@ -333,7 +333,8 @@
     "securityKeyFailed": "The security key could not be used.",
     "signIn": "Sign in",
     "signInWithGoogle": "Sign in with Google",
-    "welcome": "Welcome {{name}}!"
+    "welcome": "Welcome {{name}}!",
+    "signUpWithGoogle": "Sign up with Google"
   },
   "account": {
     "addressSaved": "Address saved.",

@@ -2,19 +2,23 @@ import { useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import { FcGoogle } from "react-icons/fc";
-import { api, apiUrl, asArray } from "../../api/client";
+import { api, apiUrl } from "../../api/client";
 import { useAuth } from "../../context/AuthContext";
 import { useShop } from "../../context/ShopContext";
 import { useI18n } from "../../i18n/I18nContext";
-import { useAsync } from "../../lib/useAsync";
 import { useSeo } from "../../lib/seo";
 import { ErrorBox, TextField } from "../../components/ui";
 import MfaChallenge from "./MfaChallenge";
 
-export const OidcButtons = ({ redirectAfter }) => {
+// OidcButtons: "Sign in with Google" (or "Sign up with Google" under the
+// register form) when the shop has Google OIDC configured (the settings'
+// oidcProviders: ["google", ...]). An unknown account is created on the way
+// back when registration is open.
+export const OidcButtons = ({ redirectAfter, signUp = false }) => {
   const { t } = useI18n();
-  const { data: providers } = useAsync(async () => asArray((await api.get("/v1/oidc/")).data), [], []);
-  if (!providers.some((p) => p.name === "google")) return null;
+  const { settings } = useShop();
+  const providers = Array.isArray(settings.oidcProviders) ? settings.oidcProviders : [];
+  if (!providers.some((p) => (typeof p === "string" ? p : p?.name) === "google")) return null;
   const start = () => {
     try {
       if (redirectAfter) sessionStorage.setItem("cwmerch.oidcRedirect", redirectAfter);
@@ -30,7 +34,7 @@ export const OidcButtons = ({ redirectAfter }) => {
         <span>{t("auth.or")}</span>
       </div>
       <button type="button" className="btn btn-secondary btn-block oidc-btn" onClick={start}>
-        <FcGoogle aria-hidden="true" /> {t("auth.signInWithGoogle")}
+        <FcGoogle aria-hidden="true" /> {signUp ? t("auth.signUpWithGoogle") : t("auth.signInWithGoogle")}
       </button>
     </>
   );
@@ -132,6 +136,7 @@ const Login = () => {
             {t("auth.register")}
           </button>
         </form>
+        <OidcButtons redirectAfter={redirect} signUp />
       </section>
       )}
     </div>

@@ -35,6 +35,9 @@ type OIDCHandler struct {
 	uiBaseURL      string
 	keycloakGroups []string
 	activationMode string
+	// RegistrationAllowed: with sign-up closed, OIDC signs existing accounts in
+	// but creates none.
+	RegistrationAllowed func(r *http.Request) bool
 }
 
 // WithConn wires the IP↔user association + Discord sign-in notice (optional).
@@ -110,7 +113,8 @@ func (h *OIDCHandler) Login(w http.ResponseWriter, r *http.Request) {
 // for the caller to turn into a session via finishSession. Shared by
 // Callback and FrontendCallback, which differ only in which redirect_uri
 // they exchange against and how they report the result back to the browser.
-func (h *OIDCHandler) completeLogin(ctx context.Context, provider oidc.Provider, code, redirectURI string) (models.User, string) {
+func (h *OIDCHandler) completeLogin(r *http.Request, provider oidc.Provider, code, redirectURI string) (models.User, string) {
+	ctx := r.Context()
 	accessToken, err := oidc.ExchangeCode(ctx, provider, code, redirectURI)
 	if err != nil {
 		slog.Error("oidc token exchange failed", "provider", provider.Name, "error", err)
@@ -125,6 +129,12 @@ func (h *OIDCHandler) completeLogin(ctx context.Context, provider oidc.Provider,
 
 	if provider.Name == oidc.Keycloak && len(h.keycloakGroups) > 0 && !hasAllowedGroup(identity.Groups, h.keycloakGroups) {
 		return models.User{}, "oidc_forbidden_group"
+	}
+
+	if h.RegistrationAllowed != nil && !h.RegistrationAllowed(r) {
+		if _, err := h.users.FindByEmail(ctx, identity.Email); err != nil {
+			return models.User{}, "oidc_registration_disabled"
+		}
 	}
 
 	user, err := h.users.FindOrCreateOIDC(ctx, identity.Email, identity.Name, identity.Surname, h.activationMode)
@@ -202,7 +212,7 @@ func (h *OIDCHandler) Callback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, errCode := h.completeLogin(r.Context(), provider, code, h.redirectURI(provider.Name, false))
+	user, errCode := h.completeLogin(r, provider, code, h.redirectURI(provider.Name, false))
 	if utils.IsNotBlank(errCode) {
 		h.redirectWithError(w, r, errCode)
 		return
@@ -266,7 +276,7 @@ func (h *OIDCHandler) FrontendCallback(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	user, errCode := h.completeLogin(r.Context(), provider, code, h.redirectURI(provider.Name, true))
+	user, errCode := h.completeLogin(r, provider, code, h.redirectURI(provider.Name, true))
 	if utils.IsNotBlank(errCode) {
 		writeError(w, http.StatusBadGateway, errCode, CodeInternal)
 		return

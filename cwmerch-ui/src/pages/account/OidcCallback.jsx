@@ -50,6 +50,11 @@ const OidcCallback = () => {
         .then(() => navigate(target(), { replace: true }))
         .catch(fail);
 
+    if (p.get("error") === "oidc_registration_disabled") {
+      toast.error(t("errors.registrationDisabled"));
+      navigate("/my-account", { replace: true });
+      return;
+    }
     if (p.get("error")) return fail();
     if (p.get("mfaChallenge")) {
       setChallenge({ challengeToken: p.get("mfaChallenge"), hasTotp: p.get("hasTotp") === "1", hasWebAuthn: p.get("hasWebAuthn") === "1" });

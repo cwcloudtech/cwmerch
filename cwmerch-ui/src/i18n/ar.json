@@ -333,7 +333,8 @@
     "securityKeyFailed": "تعذّر استخدام مفتاح الأمان.",
     "signIn": "تسجيل الدخول",
     "signInWithGoogle": "تسجيل الدخول باستخدام Google",
-    "welcome": "مرحبًا {{name}}!"
+    "welcome": "مرحبًا {{name}}!",
+    "signUpWithGoogle": "التسجيل باستخدام Google"
   },
   "account": {
     "addressSaved": "تم حفظ العنوان.",

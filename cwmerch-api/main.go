@@ -203,6 +203,7 @@ func main() {
 	}
 	h.Shop.WithPayments(pay)
 	userHandler.RegistrationAllowed = h.Commerce.RegistrationAllowed
+	h.OIDC.RegistrationAllowed = h.Commerce.RegistrationAllowed
 
 	met, err := metrics.Setup(ctx, metrics.Config{Endpoint: cfg.OtelEndpoint, Proto: cfg.OtelProto, Version: cfg.Version}, shopStats{shop})
 	if err != nil {
