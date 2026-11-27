@@ -225,8 +225,11 @@ is. cwmerch then serves as an AI agent and back-office API next to an unchanged 
 ### Shop switch (cwmerch as an internal information system)
 
 * `GET /v1/admin/shop-config` / `PUT /v1/admin/shop-config` (manager) →
-  `{"shopEnabled": true, "closedMessage": "", "registrationEnabled": true}`.
-* `GET /v1/shop/settings` adds `shopEnabled`, `closedMessage`, `registrationEnabled`.
+  `{"shopEnabled": true, "closedMessage": "", "registrationEnabled": true, "hidePoweredBy": false}`
+  (`hidePoweredBy` omitted in a PUT: unchanged).
+* `GET /v1/shop/settings` adds `shopEnabled`, `closedMessage`, `registrationEnabled`, `poweredBy` (show the
+  footer's "Powered by cwmerch v<version>", linking to the CWCloud tutorial; the version is the UI's
+  `/manifest.json`).
 * When `shopEnabled` is false the public storefront endpoints (products, categories, tags, reviews, cart,
   checkout, sitemap) answer **403** `{"i18n_code":"errors.shopDisabled"}`; `/v1/shop/settings`,
   `/v1/shop/appearance`, sign-in and the whole back office keep working. With `registrationEnabled`

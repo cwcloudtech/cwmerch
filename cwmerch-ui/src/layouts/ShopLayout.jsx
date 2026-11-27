@@ -9,6 +9,7 @@ import { useAuth } from "../context/AuthContext";
 import { useI18n } from "../i18n/I18nContext";
 import LanguageSwitcher from "./LanguageSwitcher";
 import ShopClosed from "../pages/shop/ShopClosed";
+import { useVersion } from "../lib/manifest";
 
 // Public storefront routes replaced by the "closed" page when the shop is off
 // (home, catalogue, product, category, tag, cart, checkout — not order-received/payment).
@@ -164,6 +165,7 @@ const ShopLayout = () => {
   const links = usePermalinks();
   const location = useLocation();
   const [search, setSearch] = useState("");
+  const version = useVersion(settings.version);
 
   const closedHere = shopClosed && isClosedRoute(location.pathname);
   const topCategories = categories.filter((c) => !Number(c.parent) && c.slug !== "uncategorized");
@@ -296,12 +298,22 @@ const ShopLayout = () => {
         </div>
         <div className="container footer-bottom">
           {appearance?.footerText ? <p>{appearance.footerText}</p> : <p>© {new Date().getFullYear()} {shopName}</p>}
-          <p className="small">
-            {t("footer.poweredBy")}{" "}
-            <a href="https://gitlab.cwcloud.tech/oss/cwai/cwmerch" target="_blank" rel="noopener noreferrer">
-              cwmerch
-            </a>
-          </p>
+          {settings.poweredBy !== false && (
+            <p className="small powered-by">
+              {t("footer.poweredBy")}{" "}
+              <a href="https://www.cwcloud.tech/docs/tutorials/cwmerch" target="_blank" rel="noopener noreferrer">
+                cwmerch
+              </a>
+              {version && (
+                <>
+                  {" "}
+                  <bdi dir="ltr" className="powered-by-version">
+                    v{version.replace(/^v/i, "")}
+                  </bdi>
+                </>
+              )}
+            </p>
+          )}
         </div>
       </footer>
     </div>

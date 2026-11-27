@@ -254,7 +254,8 @@ API: `GET /v1/admin/clone`, `POST /v1/admin/clone/test`, `POST /v1/admin/clone`,
 
 *Administration → Settings → Shop*: with the public shop off, the storefront endpoints answer 403
 (`errors.shopDisabled`) and the UI shows a "closed" page with your message; sign-in, the back office, the
-accounting exports and the AI assistant keep working. Customer registration can be closed too.
+accounting exports and the AI assistant keep working. Customer registration can be closed too, and the
+footer's "Powered by cwmerch v<version>" (linking to the CWCloud tutorial) can be hidden.
 
 ## Online payments
 

@@ -1173,6 +1173,8 @@
     "currency": "Devise"
   },
   "shopConfig": {
+    "poweredBy": "Afficher « Propulsé par cwmerch » dans le pied de page",
+    "poweredByHint": "Le pied de page de la boutique renvoie vers la documentation de cwmerch, avec la version.",
     "title": "Interrupteur de la boutique",
     "intro": "Désactivez la boutique publique pour utiliser cwmerch comme système d'information interne : le back-office, la connexion, les rapports et l'assistant IA restent disponibles.",
     "shopEnabled": "Boutique publique en ligne",

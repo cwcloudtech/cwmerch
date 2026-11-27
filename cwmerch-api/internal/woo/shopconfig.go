@@ -18,6 +18,9 @@ type ShopConfig struct {
 	RegistrationEnabled bool     `json:"registrationEnabled"`
 	Languages           []string `json:"languages"`
 	DefaultLanguage     string   `json:"defaultLanguage"`
+	// HidePoweredBy hides the storefront footer's "Powered by cwmerch <version>"
+	// (shown by default). Omitted in an update: unchanged.
+	HidePoweredBy *bool `json:"hidePoweredBy"`
 }
 
 func supportedLanguage(l string) bool {
@@ -36,6 +39,10 @@ func (s *Store) ShopConfig(ctx context.Context) ShopConfig {
 	if len(c.Languages) == 0 {
 		c.Languages = append([]string{}, SupportedLanguages...)
 	}
+	if c.HidePoweredBy == nil {
+		hide := false
+		c.HidePoweredBy = &hide
+	}
 	if c.DefaultLanguage == "" || !contains(strings.Join(c.Languages, ","), c.DefaultLanguage) {
 		c.DefaultLanguage = c.Languages[0]
 		if wp := strings.ToLower(s.Option(ctx, "WPLANG")); wp != "" {
@@ -51,13 +58,16 @@ func (s *Store) ShopConfig(ctx context.Context) ShopConfig {
 
 // SaveShopConfig validates and writes the switch and the languages.
 func (s *Store) SaveShopConfig(ctx context.Context, c ShopConfig, by uint64) (ShopConfig, error) {
+	cur := s.ShopConfig(ctx)
 	if c.Languages == nil {
 		// languages omitted (a partial update): keep the current ones
-		cur := s.ShopConfig(ctx)
 		c.Languages = cur.Languages
 		if c.DefaultLanguage == "" {
 			c.DefaultLanguage = cur.DefaultLanguage
 		}
+	}
+	if c.HidePoweredBy == nil {
+		c.HidePoweredBy = cur.HidePoweredBy
 	}
 	seen := map[string]bool{}
 	langs := []string{}

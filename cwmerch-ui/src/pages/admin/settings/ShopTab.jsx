@@ -17,7 +17,7 @@ const ShopTab = () => {
   useEffect(() => {
     api
       .get("/v1/admin/shop-config")
-      .then(({ data }) => setConfig({ shopEnabled: true, registrationEnabled: true, closedMessage: "", ...data, ...normalizeConfig(data) }))
+      .then(({ data }) => setConfig({ shopEnabled: true, registrationEnabled: true, closedMessage: "", hidePoweredBy: false, ...data, ...normalizeConfig(data) }))
       .catch(setError);
   }, []);
 
@@ -41,6 +41,7 @@ const ShopTab = () => {
         closedMessage: config.closedMessage || "",
         languages: config.languages,
         defaultLanguage: config.defaultLanguage,
+        hidePoweredBy: !!config.hidePoweredBy,
       });
       if (data && typeof data === "object") setConfig((c) => ({ ...c, ...data, ...normalizeConfig({ ...c, ...data }) }));
       toast.success(t("admin.saved"));
@@ -61,6 +62,7 @@ const ShopTab = () => {
         {!config.shopEnabled && <p className="notice notice-info">{t("shopConfig.closedNotice")}</p>}
         <TextArea label={t("shopConfig.closedMessage")} hint={t("shopConfig.closedMessageHint")} value={config.closedMessage} onChange={set("closedMessage")} rows={4} />
         <Toggle checked={config.registrationEnabled} onChange={set("registrationEnabled")} label={t("shopConfig.registrationEnabled")} hint={t("shopConfig.registrationEnabledHint")} />
+        <Toggle checked={!config.hidePoweredBy} onChange={(on) => set("hidePoweredBy")(!on)} label={t("shopConfig.poweredBy")} hint={t("shopConfig.poweredByHint")} />
       </section>
       <section className="card stack settings-section">
         <h2>{t("shopConfig.languages")}</h2>

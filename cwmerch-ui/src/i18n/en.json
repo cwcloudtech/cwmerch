@@ -1173,6 +1173,8 @@
     "currency": "Currency"
   },
   "shopConfig": {
+    "poweredBy": "Show “Powered by cwmerch” in the footer",
+    "poweredByHint": "The storefront footer links to the cwmerch documentation, with the version.",
     "title": "Shop switch",
     "intro": "Turn the public shop off to use cwmerch as an internal information system: the back office, sign-in, reports and the AI assistant keep working.",
     "shopEnabled": "Public shop online",

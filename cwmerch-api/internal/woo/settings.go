@@ -84,6 +84,8 @@ type ShopSettings struct {
 	Permalinks          Permalinks `json:"permalinks"`
 	DefaultLanguage     string     `json:"defaultLanguage"`
 	Version             string     `json:"version"`
+	// PoweredBy: show "Powered by cwmerch <version>" in the storefront footer.
+	PoweredBy bool `json:"poweredBy"`
 }
 
 // Decimals is the shop's price precision.
@@ -194,6 +196,7 @@ func (s *Store) ShopSettings(ctx context.Context) ShopSettings {
 	sc := s.ShopConfig(ctx)
 	set.ShopEnabled, set.ClosedMessage, set.RegistrationEnabled = sc.ShopEnabled, sc.ClosedMessage, sc.RegistrationEnabled
 	set.Languages, set.DefaultLanguage = sc.Languages, sc.DefaultLanguage
+	set.PoweredBy = sc.HidePoweredBy == nil || !*sc.HidePoweredBy
 	set.Permalinks = s.Permalinks(ctx)
 	if !calc {
 		set.TaxDisplayShop, set.TaxDisplayCart = "excl", "excl"
