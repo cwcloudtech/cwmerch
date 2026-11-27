@@ -51,6 +51,14 @@ func (s *Store) ShopConfig(ctx context.Context) ShopConfig {
 
 // SaveShopConfig validates and writes the switch and the languages.
 func (s *Store) SaveShopConfig(ctx context.Context, c ShopConfig, by uint64) (ShopConfig, error) {
+	if c.Languages == nil {
+		// languages omitted (a partial update): keep the current ones
+		cur := s.ShopConfig(ctx)
+		c.Languages = cur.Languages
+		if c.DefaultLanguage == "" {
+			c.DefaultLanguage = cur.DefaultLanguage
+		}
+	}
 	seen := map[string]bool{}
 	langs := []string{}
 	for _, l := range c.Languages {

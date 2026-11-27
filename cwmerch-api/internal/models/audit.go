@@ -7,8 +7,9 @@ import "time"
 // logged, counted on the metrics and announced on Discord: "a notification
 // on every user action". Reads are never audited.
 const (
-	AuditSignedIn  = "auth.signedIn"
-	AuditSignedOut = "auth.signedOut"
+	AuditDatabaseCloned = "database.cloned"
+	AuditSignedIn       = "auth.signedIn"
+	AuditSignedOut      = "auth.signedOut"
 
 	AuditAccountRegistered    = "account.registered"
 	AuditAccountConfirmed     = "account.confirmed"

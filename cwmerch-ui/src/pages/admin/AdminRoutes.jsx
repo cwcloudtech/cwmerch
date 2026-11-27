@@ -16,6 +16,7 @@ import Accounting from "./Accounting";
 import Appearance from "./Appearance";
 import Settings from "./settings/Settings";
 import { Audit, IpBans, SuperuserOnly, Users } from "./Superuser";
+import CloneData from "./CloneData";
 import NotFound from "../shop/NotFound";
 
 const AdminRoutes = () => (
@@ -65,6 +66,14 @@ const AdminRoutes = () => (
         element={
           <SuperuserOnly>
             <IpBans />
+          </SuperuserOnly>
+        }
+      />
+      <Route
+        path="clone"
+        element={
+          <SuperuserOnly>
+            <CloneData />
           </SuperuserOnly>
         }
       />

@@ -90,3 +90,28 @@ Resolve today's date from the account context for relative periods ("this month"
 | Re-check an online payment of an order | `GET /v1/shop/orders/{id}/payment?key={orderKey}` (marks the order paid when the provider confirms) |
 | Invoices | `GET /v1/admin/invoices/?search=`; one order's: `GET /v1/admin/orders/{id}/invoice`; issue it: `POST /v1/admin/orders/{id}/invoice` — confirm first; PDF: `GET /v1/admin/invoices/{id}/pdf` (download link) |
 | Invoicing settings (VAT / timbre fiscal, numbering, seller) | `GET /v1/admin/invoicing/settings`; per-country defaults: `GET /v1/admin/invoicing/country-defaults` |
+
+## Database: PostgreSQL / MySQL, clone data (administrators)
+
+cwmerch runs on MySQL/MariaDB (next to WordPress) or PostgreSQL. "Clone data" copies the whole shop
+from one database to another, between the same or different engines.
+
+| Need | Call |
+|---|---|
+| Which database the shop runs on (engine, version, migration, products/orders/users counts) + the running/last clone | `GET /v1/admin/clone` |
+| Check a remote database (connects, compares migrations, lists issues) — read-only | `POST /v1/admin/clone/test` `{"direction":"export|import","remote":{"type":"postgres|mysql|mariadb","host":"...","port":"5432","name":"...","user":"...","password":"...","prefix":"wp_","sslMode":"disable"}}` |
+| Start a clone — confirm first | `POST /v1/admin/clone` same body + `"conflict":"overwrite|skip","confirm":true` (202) |
+| Follow it | `GET /v1/admin/clone/job` (`status` running → done/failed, per-table `copied`/`replaced`) |
+
+* `export` copies the main database INTO the remote one; `import` copies the remote one INTO the main
+  database (the shop runs on the result right away).
+* `conflict`: `overwrite` (default: rows with the same id, or clashing on a unique key, are replaced by
+  the source's; the metadata of the posts/orders/users the source has are replaced) or `skip` (keep the
+  destination's rows, only add the missing ones).
+* Always: 1) `POST /v1/admin/clone/test`; 2) summarize it for the user — direction, source → destination
+  (engine, host/database, counts), `ready` and the `issues` (the destination must be migrated with
+  cwmerch's Flyway migrations first), the conflict mode — and remind them to back up the destination
+  and that images (wp-content/uploads) are not in the database; 3) only after their explicit yes, start
+  it; 4) poll the job every few seconds and report the result (tables, rows copied, failures).
+* Database passwords: suggest entering them in *Administration → Clone data* rather than in the chat.
+  If the user gives one here, use it only in the tool call and never repeat it in your answers.

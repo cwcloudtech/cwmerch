@@ -544,7 +544,7 @@ func (s *Store) syncProductRating(ctx context.Context, q db.Querier, productID u
 	st := ratingStats{counts: map[int]int64{}}
 	rows, err := q.QueryContext(ctx, `SELECT m.meta_value, COUNT(*) FROM `+s.T("commentmeta")+` m
 		JOIN `+s.T("comments")+` c ON c.comment_ID = m.comment_id
-		WHERE m.meta_key = 'rating' AND c.comment_post_ID = ? AND c.comment_approved = '1' AND m.meta_value > 0
+		WHERE m.meta_key = 'rating' AND c.comment_post_ID = ? AND c.comment_approved = '1' AND CAST(m.meta_value AS SIGNED) > 0
 		GROUP BY m.meta_value`, productID)
 	if err != nil {
 		return err

@@ -353,3 +353,38 @@ back to WooCommerce's localized defaults (`product`/`product-category`/`product-
 * `POST /v1/contact`: with a CWCloud contact form id, forwarded to it (`contactreq`); without one but with
   an API key, emailed to the recipient with the visitor as reply-to (`email`); else 405
   `errors.contactFormNotConfigured`. `GET /v1/shop/settings` `contactEnabled` follows.
+
+## ai-instruct-3: PostgreSQL and clone data
+
+### Databases
+
+`DB_TYPE` = `mysql` (`mariadb`, `my`) or `postgres` (`postgresql`, `pgsql`, `pg`, `psql`); `DB_HOST`, `DB_PORT`
+(default 3306 / 5432), `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_TABLE_PREFIX`, `DB_SSLMODE`, `DB_POOL_SIZE`
+(the `MYSQL_*` / `WP_TABLE_PREFIX` names remain fallbacks). The API contract is identical on both engines.
+
+### Clone data (role `superuser`)
+
+* `GET /v1/admin/clone` → `{"main": Info, "job": Job|null}` — `Info` =
+  `{"type":"mysql|postgres","version","host","name","prefix","migration":"3","tables","rows","products","orders","customers"}`.
+* `POST /v1/admin/clone/test` `{"direction":"export|import","remote":{"type","host","port","name","user","password","prefix","sslMode"}}`
+  → `{"main": Info, "remote": Info, "ready": true, "issues": [...], "missing": ["table", ...]}` (read-only).
+  `ready` needs a migrated destination (`cwmerch_settings` present, Flyway history at least the source's version).
+* `POST /v1/admin/clone` same body + `"conflict":"overwrite|skip"` (default overwrite) + `"confirm":true` → 202 `Job`:
+  `{"id","direction","conflict","status":"running|done|failed","source":Info,"target":Info,"copied","total","error",
+  "startedAt","finishedAt","startedBy","tables":[{"table","sourceRows","copied","replaced","beforeRows","afterRows","status":"pending|running|done|failed","error","durationMs"}]}`.
+  Audited as `database.cloned`.
+* `GET /v1/admin/clone/job` → the running/last `Job` (404 `errors.cloneNotFound` if none).
+* Errors: 400 `errors.cloneConfirmRequired`, `errors.cloneInvalidDirection`, `errors.cloneSameDatabase`,
+  `errors.cloneConnection` (the remote cannot be reached; the message says why), 409 `errors.cloneRunning`,
+  `errors.cloneNotReady` (migrations).
+* `export`: main → remote; `import`: remote → main (the API drops its caches afterwards). `overwrite`: upsert by
+  primary key, destination rows clashing on another unique key are deleted, child rows (postmeta, usermeta,
+  commentmeta, termmeta, term_relationships, wc_orders_meta, wc_order_addresses, order items and their meta,
+  tax rate locations) of the parents the source has are replaced; `skip`: only missing rows are inserted.
+
+### AI assistant
+
+The `cwmerch_api` tool runs read-only POSTs without a confirmation: `/v1/shop/cart`, `/v1/admin/clone/test`,
+`/v1/admin/payment-providers/{id}/test`. The skill describes the clone flow (test → summary → explicit yes →
+start → poll).
+

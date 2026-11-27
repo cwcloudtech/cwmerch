@@ -4,12 +4,15 @@
 
 **cwmerch** is an open-source, lighter remake of [WooCommerce](https://woocommerce.com) written in
 Go (API) and React (UI). It works **directly on a WordPress/WooCommerce MySQL or MariaDB database** —
-the same tables, the same users, the same orders — so it can:
+the same tables, the same users, the same orders — **or on PostgreSQL**, so it can:
 
 * run **alone** (a fresh install creates the WooCommerce schema with Flyway), or
 * run **alongside an existing WooCommerce shop**, sharing its database: what cwmerch changes,
   WooCommerce sees, and the other way round. There is no other link to WordPress (no plugin, no REST
   call), only the database;
+* run your WooCommerce shop **on PostgreSQL** — something WooCommerce users have dreamed of for years:
+  the same schema exists for PostgreSQL, and *Clone data* moves a shop from MySQL/MariaDB to PostgreSQL
+  (or back) from the administration — see [PostgreSQL and clone data](#postgresql-and-clone-data);
 * or be used **only as an AI agent for WooCommerce** (plus API keys, MFA and accounting exports),
   without replacing anything: then only the API is needed — see
   [API-only mode](#api-only-mode-an-ai-agent-for-woocommerce).
@@ -107,16 +110,18 @@ docker compose up -d --build
 * Shop: http://localhost:3000 — the **first account registered becomes the administrator**.
 * API and Swagger UI: http://localhost:8080 (`/openapi.json`, `/metrics`).
 
-The compose file starts MySQL 8.4, runs the Flyway migrations, then the API and the UI.
+The compose file starts MySQL 8.4 (or PostgreSQL 17 with `DB_TYPE=postgres` and
+`COMPOSE_PROFILES=postgres` in `.env`), runs the Flyway migrations, then the API and the UI.
 
 ## Database
 
-cwmerch uses WordPress' table prefix (`WP_TABLE_PREFIX`, default `wp_`). The migrations use the Flyway
+cwmerch uses WordPress' table prefix (`DB_TABLE_PREFIX`, default `wp_`). The migrations use the Flyway
 placeholder `${table_prefix}` (`-placeholders.table_prefix=wp_`).
 
 ### Fresh install
 
-Nothing to do: the `flyway` service applies `V1__woocommerce_schema.sql` (the WordPress 7.1 + WooCommerce
+Nothing to do: the `flyway` service applies (from `cwmerch-db/mysql` or `cwmerch-db/postgresql`, following
+`DB_TYPE`) `V1__woocommerce_schema.sql` (the WordPress 7.1 + WooCommerce
 11.3 schema), `V2__cwmerch_tables.sql` and `V3__woocommerce_defaults.sql`.
 
 ### Alongside an existing WooCommerce instance
@@ -142,8 +147,8 @@ The WooCommerce tables already exist, so V1 must be **marked as applied** instea
    WHERE NOT EXISTS (SELECT 1 FROM `flyway_schema_history` WHERE `version` = '1');
    ```
 
-3. Point `.env` at the WordPress database (`MYSQL_HOST`, `MYSQL_DATABASE`, `MYSQL_USER`,
-   `MYSQL_PASSWORD`, `WP_TABLE_PREFIX`) and run the migrations: V2 only **adds** cwmerch's `cwmerch_*`
+3. Point `.env` at the WordPress database (`DB_HOST`, `DB_NAME`, `DB_USER`,
+   `DB_PASSWORD`, `DB_TABLE_PREFIX`) and run the migrations: V2 only **adds** cwmerch's `cwmerch_*`
    tables, V3 only adds the default options and terms that are **missing** (it never overwrites a value).
 
    ```bash
@@ -199,6 +204,31 @@ option, shared with the CWCloud WordPress plugin (it wins over `CWCLOUD_API_KEY`
 button. The contact form goes to a CWCloud contact form when an id is set, else it is emailed to the
 recipient read from Contact Form 7 (or WordPress' admin email), editable from the same screen.
 
+## PostgreSQL and clone data
+
+**cwmerch runs on PostgreSQL too** — something WooCommerce users have dreamed of for years. Set
+`DB_TYPE=postgres` (the port defaults to 5432) and run the `cwmerch-db/postgresql` migrations: the same
+WordPress/WooCommerce + cwmerch schema, lowercase, text columns as `citext` so searches stay
+case-insensitive. The API keeps a single set of queries, written in MySQL's dialect, and translates them
+at the driver level on PostgreSQL (placeholders, quoting, `INSERT IGNORE` / `ON DUPLICATE KEY UPDATE` →
+`ON CONFLICT`, `CAST`, `IF()`, JSON functions, `LastInsertId` → `RETURNING`). WordPress itself only runs
+on MySQL/MariaDB: PostgreSQL is for shops run by cwmerch alone (or after leaving WordPress).
+
+*Administration → Clone data* (WordPress administrators) copies all the shop's data between two
+databases, in any direction — MySQL/MariaDB → PostgreSQL, PostgreSQL → MySQL, or the same engine:
+
+* **Export**: the main database into a target one; **Import**: a remote database into the main one.
+* Both must be migrated (same Flyway version); *Test the connection* compares them first.
+* The destination may already hold data: **Overwrite** (default) upserts by primary key, replaces rows
+  clashing on another unique key (option name, invoice number…) and replaces the metadata of the posts,
+  orders, users… the source has; **Skip** only adds the missing rows.
+* Tables are copied parents first (foreign keys) in keyset-paginated batches; zero dates, a different table
+  prefix (`<prefix>user_roles`, `<prefix>capabilities`…) and PostgreSQL identity sequences are handled.
+* Images (`wp-content/uploads`) are not in the database: copy that folder too. Back up the destination first.
+
+API: `GET /v1/admin/clone`, `POST /v1/admin/clone/test`, `POST /v1/admin/clone`, `GET /v1/admin/clone/job`
+(see [docs/API.md](docs/API.md)). The AI assistant can run it too (test, then your explicit yes).
+
 ## Shop switch: cwmerch as an internal information system
 
 *Administration → Settings → Shop*: with the public shop off, the storefront endpoints answer 403
@@ -247,9 +277,15 @@ WooCommerce emails.
 
 | Variable | Default | Meaning |
 |---|---|---|
-| `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD` | `localhost`, `3306`, `wordpress`, `wordpress`, — | The (WordPress) database |
-| `WP_TABLE_PREFIX` | `wp_` | WordPress table prefix |
-| `MYSQL_POOL_SIZE` | `10` | Connection pool size |
+| `DB_TYPE` | `mysql` | `mysql` (also `mariadb`, `my`) or `postgres` (also `postgresql`, `pgsql`, `pg`, `psql`) |
+| `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` | `localhost`, `wordpress`, `wordpress`, — | The (WordPress) database |
+| `DB_PORT` | `3306` (MySQL/MariaDB), `5432` (PostgreSQL) | Database port |
+| `DB_TABLE_PREFIX` | `wp_` | WordPress table prefix |
+| `DB_SSLMODE` | `disable` | PostgreSQL SSL mode |
+| `DB_POOL_SIZE` | `10` | Connection pool size |
+
+The former `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD`, `MYSQL_POOL_SIZE` and
+`WP_TABLE_PREFIX` still work as fallbacks.
 | `JWT_SECRET` | — (required) | Session token signing key |
 | `CWMERCH_SECRET_KEY` | — | Seals payment credentials stored from the administration (`openssl rand -base64 32`) |
 | `STRIPE_*`, `KONNECT_*`, `FLOUCI_*` | — | Payment credentials from the environment (see `.env.example`) |
@@ -280,7 +316,7 @@ docker compose up -d db flyway
 ```
 
 ```bash
-cd cwmerch-api && MYSQL_HOST=127.0.0.1 JWT_SECRET=dev CWMERCH_CORS_ENABLED=true go run .
+cd cwmerch-api && DB_HOST=127.0.0.1 JWT_SECRET=dev CWMERCH_CORS_ENABLED=true go run .
 ```
 
 ```bash

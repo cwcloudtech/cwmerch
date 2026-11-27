@@ -3,6 +3,7 @@ import { Link, Navigate, NavLink, Outlet, useLocation } from "react-router-dom";
 import {
   FiBarChart2,
   FiBox,
+  FiCopy,
   FiCpu,
   FiFile,
   FiFileText,
@@ -56,6 +57,7 @@ const SUPER_NAV = [
   { to: "/admin/users", key: "admin.nav.users", icon: FiSliders },
   { to: "/admin/audit", key: "admin.nav.audit", icon: FiList },
   { to: "/admin/ip-bans", key: "admin.nav.ipBans", icon: FiShield },
+  { to: "/admin/clone", key: "admin.nav.clone", icon: FiCopy },
 ];
 
 const AdminLayout = () => {

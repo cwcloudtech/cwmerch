@@ -46,11 +46,11 @@ type CWCloudSettings struct {
 
 // CWCloudSettingsInput edits them (a blank apiKey keeps the stored one).
 type CWCloudSettingsInput struct {
-	APIURL           *string `json:"apiUrl"`
-	APIKey           *string `json:"apiKey"`
+	APIURL *string `json:"apiUrl"`
+	APIKey *string `json:"apiKey"`
 	// ClearAPIKey removes the key stored in WordPress (the environment's, if
 	// any, applies again).
-	ClearAPIKey bool `json:"clearApiKey,omitempty"`
+	ClearAPIKey      bool    `json:"clearApiKey,omitempty"`
 	ContactFormID    *string `json:"contactFormId"`
 	ContactRecipient *string `json:"contactRecipient"`
 	ContactSubject   *string `json:"contactSubject"`

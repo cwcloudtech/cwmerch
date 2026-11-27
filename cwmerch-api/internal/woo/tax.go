@@ -83,8 +83,8 @@ func (s *Store) DeleteTaxClass(ctx context.Context, slug string) error {
 		if n, _ := res.RowsAffected(); n == 0 {
 			return ErrNotFound
 		}
-		if _, err := tx.ExecContext(ctx, `DELETE l FROM `+s.T("woocommerce_tax_rate_locations")+` l JOIN `+s.T("woocommerce_tax_rates")+
-			` r ON r.tax_rate_id = l.tax_rate_id WHERE r.tax_rate_class = ?`, slug); err != nil {
+		if _, err := tx.ExecContext(ctx, `DELETE FROM `+s.T("woocommerce_tax_rate_locations")+` WHERE tax_rate_id IN (SELECT tax_rate_id FROM `+s.T("woocommerce_tax_rates")+
+			` WHERE tax_rate_class = ?)`, slug); err != nil {
 			return err
 		}
 		_, err = tx.ExecContext(ctx, `DELETE FROM `+s.T("woocommerce_tax_rates")+` WHERE tax_rate_class = ?`, slug)

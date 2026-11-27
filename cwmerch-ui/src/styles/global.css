@@ -2854,3 +2854,116 @@ pre {
   direction: ltr;
   unicode-bidi: isolate;
 }
+
+/* ---- Clone data (admin) ---- */
+.clone-page h1 svg {
+  vertical-align: -3px;
+}
+.clone-directions {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(0, 1fr);
+}
+@media (min-width: 640px) {
+  .clone-directions {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+}
+.clone-direction {
+  display: grid;
+  gap: 4px;
+  justify-items: start;
+  text-align: start;
+  cursor: pointer;
+  border: 2px solid var(--c-border);
+  font: inherit;
+  color: inherit;
+}
+.clone-direction svg {
+  font-size: 1.4rem;
+  color: var(--c-primary);
+}
+.clone-direction.is-active {
+  border-color: var(--c-primary);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--c-primary) 18%, transparent);
+}
+.clone-grid {
+  display: grid;
+  gap: 16px;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+}
+@media (min-width: 900px) {
+  .clone-grid {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  }
+}
+.db-card-head {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.db-card-head > svg {
+  font-size: 1.6rem;
+  color: var(--c-primary);
+  flex: none;
+}
+.db-card-target {
+  border-color: var(--c-primary);
+}
+.clone-compare {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(0, 1fr);
+  align-items: center;
+}
+.clone-arrow {
+  justify-self: center;
+  font-size: 1.6rem;
+  color: var(--c-primary);
+  transform: rotate(90deg);
+}
+@media (min-width: 900px) {
+  .clone-compare {
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  }
+  .clone-arrow {
+    transform: none;
+  }
+  [dir="rtl"] .clone-arrow {
+    transform: scaleX(-1);
+  }
+}
+.clone-route {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+.row-between {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  justify-content: space-between;
+}
+.progress {
+  height: 10px;
+  border-radius: 999px;
+  background: var(--c-surface);
+  border: 1px solid var(--c-border);
+  overflow: hidden;
+}
+.progress-bar {
+  height: 100%;
+  background: var(--c-primary);
+  transition: width 0.3s ease;
+}
+.table-compact td,
+.table-compact th {
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+.text-danger {
+  color: var(--c-danger);
+}

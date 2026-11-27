@@ -78,7 +78,12 @@
     "guestCheckoutDisabled": "Please sign in to place an order.",
     "shopDisabled": "The shop is currently closed.",
     "registrationDisabled": "Account registration is disabled.",
-    "phoneRequired": "A valid phone number is required to confirm your order."
+    "phoneRequired": "A valid phone number is required to confirm your order.",
+    "cloneRunning": "A clone is already running",
+    "cloneSameDatabase": "The remote database is the main database",
+    "cloneConfirmRequired": "Please confirm the clone",
+    "cloneInvalidDirection": "Invalid clone direction",
+    "cloneNotFound": "No clone has been run"
   },
   "nav": {
     "admin": "Administration",
@@ -479,7 +484,8 @@
       "tags": "Tags",
       "users": "Users",
       "visitStore": "Visit store",
-      "invoices": "Invoices"
+      "invoices": "Invoices",
+      "clone": "Clone data"
     },
     "orders": {
       "actions": "Order actions",
@@ -1378,5 +1384,72 @@
       "option": "Saved in WordPress' options.",
       "admin_email": "Defaults to the WordPress admin email."
     }
+  },
+  "clone": {
+    "title": "Clone data",
+    "intro": "Copy all the shop's data from one database to another: from the main database to a target one (export), or from a remote database into the main one (import). MySQL, MariaDB and PostgreSQL, in any direction: move your WooCommerce shop to PostgreSQL, or back.",
+    "direction": "Direction",
+    "export": "Export: main → target",
+    "exportHint": "Copy the main database to another database.",
+    "import": "Import: remote → main",
+    "importHint": "Copy a remote database into the main database.",
+    "mainDatabase": "Main database",
+    "targetDatabase": "Target database",
+    "sourceDatabase": "Remote database (source)",
+    "engine": "Engine",
+    "host": "Host",
+    "port": "Port",
+    "name": "Database",
+    "user": "User",
+    "password": "Password",
+    "prefix": "Table prefix",
+    "sslMode": "SSL mode",
+    "test": "Test the connection",
+    "testing": "Testing…",
+    "check": "Check",
+    "source": "Source",
+    "destination": "Destination",
+    "database": "Database",
+    "migration": "Migrations",
+    "noMigration": "none",
+    "content": "Content",
+    "contentValue": "{{products}} products, {{orders}} orders, {{users}} users ({{rows}} rows)",
+    "ready": "Both databases are migrated and ready to be cloned.",
+    "notReady": "The databases cannot be cloned yet:",
+    "missing": "Tables missing on the destination (not copied): {{tables}}",
+    "conflictLabel": "When a row already exists on the destination",
+    "conflict": {
+      "overwrite": "Overwrite (the source wins)",
+      "skip": "Keep the destination's rows"
+    },
+    "conflictHint": {
+      "overwrite": "Rows with the same id are replaced, and so are rows clashing on a unique key (an option name, an invoice number…). The metadata of the products, orders and users the source has are replaced by the source's.",
+      "skip": "Existing rows are left untouched; only the rows the destination lacks are added."
+    },
+    "backupNotice": "Back up the destination database first: the copy is not reversible. Images (wp-content/uploads) are not part of the database: copy that folder too.",
+    "cloneButton": "Clone data",
+    "confirmTitle": "Clone data?",
+    "confirmExport": "Every table of the main database will be copied into \"{{name}}\". Mode: {{mode}}.",
+    "confirmImport": "The remote database will be copied into the main database \"{{name}}\". Mode: {{mode}}. The shop runs on the result right away.",
+    "typeName": "Type \"{{name}}\" to confirm",
+    "started": "Clone started",
+    "exportTitle": "Export",
+    "importTitle": "Import",
+    "progress": "{{tables}} / {{totalTables}} tables, {{rows}} / {{total}} rows",
+    "table": "Table",
+    "sourceRows": "Source rows",
+    "copied": "Copied",
+    "replaced": "Replaced",
+    "before": "Before",
+    "after": "After",
+    "tableStatus": "Status",
+    "status": {
+      "running": "Running",
+      "done": "Done",
+      "failed": "Failed",
+      "pending": "Pending"
+    },
+    "showEmpty": "Show the {{count}} empty tables",
+    "hideEmpty": "Hide the empty tables"
   }
 }

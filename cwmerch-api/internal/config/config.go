@@ -3,11 +3,13 @@ package config
 
 import (
 	"encoding/json"
+	"log/slog"
 	"os"
 	"strconv"
 	"strings"
 	"time"
 
+	"cwmerch-api/internal/db"
 	"cwmerch-api/internal/models"
 	"cwmerch-api/internal/utils"
 )
@@ -17,7 +19,10 @@ type Config struct {
 	MaxWorkers int
 
 	// MySQL/MariaDB shared with WordPress/WooCommerce.
+	// DBType is "mysql" or "postgres" (normalized from DB_TYPE).
+	DBType                                               string
 	DBHost, DBPort, DBUser, DBPassword, DBName, DBPrefix string
+	DBSSLMode                                            string
 	DBPoolSize                                           int
 
 	JWTSecret          string
@@ -110,16 +115,23 @@ func Load() Config {
 	if uploadsURL == "" && uploadsDir != "" {
 		uploadsURL = api + "/v1/media"
 	}
+	dbType, err := db.NormalizeType(firstEnv("mysql", "DB_TYPE"))
+	if err != nil {
+		slog.Warn("unknown DB_TYPE, using mysql", "type", os.Getenv("DB_TYPE"))
+		dbType = db.MySQL
+	}
 	return Config{
 		Port:                     utils.GetEnv("PORT", "8080"),
 		MaxWorkers:               envInt("MAX_WORKERS", 5),
-		DBHost:                   utils.GetEnv("MYSQL_HOST", "localhost"),
-		DBPort:                   utils.GetEnv("MYSQL_PORT", "3306"),
-		DBUser:                   utils.GetEnv("MYSQL_USER", "wordpress"),
-		DBPassword:               os.Getenv("MYSQL_PASSWORD"),
-		DBName:                   utils.GetEnv("MYSQL_DATABASE", "wordpress"),
-		DBPrefix:                 utils.GetEnv("WP_TABLE_PREFIX", "wp_"),
-		DBPoolSize:               envInt("MYSQL_POOL_SIZE", 10),
+		DBType:                   dbType,
+		DBHost:                   firstEnv("localhost", "DB_HOST", "MYSQL_HOST"),
+		DBPort:                   firstEnv(db.DefaultPort(dbType), "DB_PORT", "MYSQL_PORT"),
+		DBUser:                   firstEnv("wordpress", "DB_USER", "MYSQL_USER"),
+		DBPassword:               firstEnv("", "DB_PASSWORD", "MYSQL_PASSWORD"),
+		DBName:                   firstEnv("wordpress", "DB_NAME", "MYSQL_DATABASE"),
+		DBPrefix:                 firstEnv("wp_", "DB_TABLE_PREFIX", "WP_TABLE_PREFIX"),
+		DBPoolSize:               envInt("DB_POOL_SIZE", envInt("MYSQL_POOL_SIZE", 10)),
+		DBSSLMode:                firstEnv("disable", "DB_SSLMODE"),
 		JWTSecret:                os.Getenv("JWT_SECRET"),
 		CorsEnabled:              utils.IsTrue(os.Getenv("CWMERCH_CORS_ENABLED")),
 		CorsAllowedOrigins:       strings.Split(utils.GetEnv("CWMERCH_CORS_ALLOWED_ORIGINS", "*"), ","),
@@ -173,4 +185,15 @@ func versionFromManifest(path, fallback string) string {
 		return fallback
 	}
 	return m.Version
+}
+
+// firstEnv is the first non-empty variable among names (the generic DB_*
+// ones first, then the former MYSQL_* names), else def.
+func firstEnv(def string, names ...string) string {
+	for _, n := range names {
+		if v := strings.TrimSpace(os.Getenv(n)); v != "" {
+			return v
+		}
+	}
+	return def
 }

@@ -19,6 +19,7 @@ import (
 	"cwmerch-api/internal/config"
 	"cwmerch-api/internal/contact"
 	"cwmerch-api/internal/db"
+	"cwmerch-api/internal/dbclone"
 	"cwmerch-api/internal/email"
 	"cwmerch-api/internal/enrich"
 	"cwmerch-api/internal/handlers"
@@ -58,7 +59,7 @@ func main() {
 		os.Exit(1)
 	}
 
-	database, err := db.Connect(ctx, db.Config{Host: cfg.DBHost, Port: cfg.DBPort, User: cfg.DBUser, Password: cfg.DBPassword,
+	database, err := db.Connect(ctx, db.Config{Type: cfg.DBType, SSLMode: cfg.DBSSLMode, Host: cfg.DBHost, Port: cfg.DBPort, User: cfg.DBUser, Password: cfg.DBPassword,
 		Name: cfg.DBName, Prefix: cfg.DBPrefix, PoolSize: cfg.DBPoolSize})
 	if err != nil {
 		tel.Logger.Error("failed to connect to the database", "error", err)
@@ -173,6 +174,8 @@ func main() {
 
 	reports := handlers.NewReportsHandler(shop)
 	renderer := seo.New(shop, cfg.UIInternalURL, cfg.ShopURL)
+	cloner := dbclone.New(database)
+	cloner.OnImported = shop.ForgetOptions
 	contactClient := contact.New(cfg.CWCloudAPIURL, cfg.CWCloudContactFormID)
 	contactClient.Resolve = func(ctx context.Context) (string, string) {
 		apiURL, _ := shop.CWCloudAPI(ctx)
@@ -195,6 +198,7 @@ func main() {
 		Reports:   reports,
 		Reviews:   handlers.NewReviewsHandler(shop, audit),
 		Customers: handlers.NewCustomersHandler(shop, audit),
+		Clone:     handlers.NewCloneHandler(cloner, audit),
 		Commerce:  handlers.NewCommerceHandler(shop, pay, invoices, wooMailer, users, audit).WithSender(mailer),
 	}
 	h.Shop.WithPayments(pay)

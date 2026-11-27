@@ -34,6 +34,7 @@ type Handlers struct {
 	Reviews    *handlers.ReviewsHandler
 	Customers  *handlers.CustomersHandler
 	Commerce   *handlers.CommerceHandler
+	Clone      *handlers.CloneHandler
 }
 
 // Config is what the router needs besides the handlers.
@@ -356,6 +357,12 @@ func New(h Handlers, c Config) http.Handler {
 					r.Get("/{id}/ips", h.IPBan.UserIPs)
 				})
 				r.Get("/audit", h.Admin.Audit)
+				// clone data: export the main database to another one, or
+				// import a remote one (MySQL/MariaDB <-> PostgreSQL)
+				r.Get("/clone", h.Clone.Status)
+				r.Post("/clone", h.Clone.Start)
+				r.Get("/clone/job", h.Clone.Job)
+				r.Post("/clone/test", h.Clone.Test)
 				r.Route("/ip-bans", func(r chi.Router) {
 					r.Get("/", h.IPBan.ListIPs)
 					r.Get("/stats", h.IPBan.Stats)

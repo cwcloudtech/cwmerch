@@ -78,7 +78,12 @@
     "guestCheckoutDisabled": "Veuillez vous connecter pour passer commande.",
     "shopDisabled": "La boutique est actuellement fermée.",
     "registrationDisabled": "La création de compte est désactivée.",
-    "phoneRequired": "Un numéro de téléphone valide est requis pour confirmer votre commande."
+    "phoneRequired": "Un numéro de téléphone valide est requis pour confirmer votre commande.",
+    "cloneRunning": "Un clonage est déjà en cours",
+    "cloneSameDatabase": "La base distante est la base principale",
+    "cloneConfirmRequired": "Veuillez confirmer le clonage",
+    "cloneInvalidDirection": "Sens de clonage invalide",
+    "cloneNotFound": "Aucun clonage n'a été lancé"
   },
   "nav": {
     "admin": "Administration",
@@ -479,7 +484,8 @@
       "tags": "Étiquettes",
       "users": "Utilisateurs",
       "visitStore": "Voir la boutique",
-      "invoices": "Factures"
+      "invoices": "Factures",
+      "clone": "Cloner les données"
     },
     "orders": {
       "actions": "Actions de commande",
@@ -1378,5 +1384,72 @@
       "option": "Enregistré dans les options WordPress.",
       "admin_email": "Par défaut, l'e-mail administrateur de WordPress."
     }
+  },
+  "clone": {
+    "title": "Cloner les données",
+    "intro": "Copiez toutes les données de la boutique d'une base à une autre : de la base principale vers une base cible (export), ou d'une base distante vers la base principale (import). MySQL, MariaDB et PostgreSQL, dans tous les sens : passez votre boutique WooCommerce sur PostgreSQL, ou revenez-en.",
+    "direction": "Sens",
+    "export": "Export : principale → cible",
+    "exportHint": "Copier la base principale vers une autre base.",
+    "import": "Import : distante → principale",
+    "importHint": "Copier une base distante dans la base principale.",
+    "mainDatabase": "Base principale",
+    "targetDatabase": "Base cible",
+    "sourceDatabase": "Base distante (source)",
+    "engine": "Moteur",
+    "host": "Hôte",
+    "port": "Port",
+    "name": "Base",
+    "user": "Utilisateur",
+    "password": "Mot de passe",
+    "prefix": "Préfixe des tables",
+    "sslMode": "Mode SSL",
+    "test": "Tester la connexion",
+    "testing": "Test…",
+    "check": "Vérification",
+    "source": "Source",
+    "destination": "Destination",
+    "database": "Base",
+    "migration": "Migrations",
+    "noMigration": "aucune",
+    "content": "Contenu",
+    "contentValue": "{{products}} produits, {{orders}} commandes, {{users}} utilisateurs ({{rows}} lignes)",
+    "ready": "Les deux bases sont migrées et prêtes à être clonées.",
+    "notReady": "Les bases ne peuvent pas encore être clonées :",
+    "missing": "Tables absentes de la destination (non copiées) : {{tables}}",
+    "conflictLabel": "Quand une ligne existe déjà dans la destination",
+    "conflict": {
+      "overwrite": "Écraser (la source l'emporte)",
+      "skip": "Garder les lignes de la destination"
+    },
+    "conflictHint": {
+      "overwrite": "Les lignes de même identifiant sont remplacées, de même que celles en conflit sur une clé unique (nom d'option, numéro de facture…). Les métadonnées des produits, commandes et utilisateurs présents dans la source sont remplacées par celles de la source.",
+      "skip": "Les lignes existantes ne sont pas modifiées ; seules les lignes absentes de la destination sont ajoutées."
+    },
+    "backupNotice": "Sauvegardez d'abord la base de destination : la copie n'est pas réversible. Les images (wp-content/uploads) ne sont pas dans la base : copiez aussi ce dossier.",
+    "cloneButton": "Cloner les données",
+    "confirmTitle": "Cloner les données ?",
+    "confirmExport": "Toutes les tables de la base principale seront copiées dans « {{name}} ». Mode : {{mode}}.",
+    "confirmImport": "La base distante sera copiée dans la base principale « {{name}} ». Mode : {{mode}}. La boutique tourne immédiatement sur le résultat.",
+    "typeName": "Saisissez « {{name}} » pour confirmer",
+    "started": "Clonage lancé",
+    "exportTitle": "Export",
+    "importTitle": "Import",
+    "progress": "{{tables}} / {{totalTables}} tables, {{rows}} / {{total}} lignes",
+    "table": "Table",
+    "sourceRows": "Lignes source",
+    "copied": "Copiées",
+    "replaced": "Remplacées",
+    "before": "Avant",
+    "after": "Après",
+    "tableStatus": "État",
+    "status": {
+      "running": "En cours",
+      "done": "Terminé",
+      "failed": "Échec",
+      "pending": "En attente"
+    },
+    "showEmpty": "Afficher les {{count}} tables vides",
+    "hideEmpty": "Masquer les tables vides"
   }
 }

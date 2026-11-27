@@ -196,3 +196,15 @@ func TestAdapterSystem(t *testing.T) {
 		}
 	})
 }
+
+func TestReadOnlyPost(t *testing.T) {
+	for p, want := range map[string]bool{
+		"/v1/shop/cart": true, "/v1/shop/cart/": true, "/v1/admin/clone/test": true, "/v1/admin/clone/test?x=1": true,
+		"/v1/admin/payment-providers/stripe/test": true, "/v1/admin/clone": false, "/v1/admin/orders/1": false,
+		"/v1/admin/payment-providers/stripe/x/test": false,
+	} {
+		if got := readOnlyPost(p); got != want {
+			t.Errorf("readOnlyPost(%q) = %v, want %v", p, got, want)
+		}
+	}
+}

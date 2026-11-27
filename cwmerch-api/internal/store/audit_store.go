@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"strings"
+	"time"
 
 	"cwmerch-api/internal/db"
 
@@ -207,7 +208,12 @@ func (s *AuditStore) List(ctx context.Context, f AuditFilter) (models.AuditPage,
 		add("created_at >= ?", f.From)
 	}
 	if f.To != "" {
-		add("created_at < DATE_ADD(?, INTERVAL 1 DAY)", f.To)
+		// the whole "to" day (computed here: portable MySQL/PostgreSQL)
+		if to, err := time.Parse("2006-01-02", f.To[:min(len(f.To), 10)]); err == nil {
+			add("created_at < ?", to.AddDate(0, 0, 1).Format("2006-01-02"))
+		} else {
+			add("created_at <= ?", f.To)
+		}
 	}
 	args = append(args, limit, offset)
 	rows, err := s.db.QueryContext(ctx, `SELECT id, COALESCE(user_id, 0), action, subject_type, subject_id, data, created_at FROM `+

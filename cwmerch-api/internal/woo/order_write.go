@@ -729,7 +729,7 @@ func (s *Store) DeleteOrder(ctx context.Context, id uint64, force bool) error {
 	return s.DB.InTx(ctx, func(tx *sql.Tx) error {
 		for _, oid := range ids {
 			for _, stmt := range []string{
-				`DELETE m FROM ` + s.T("woocommerce_order_itemmeta") + ` m JOIN ` + s.T("woocommerce_order_items") + ` i ON i.order_item_id = m.order_item_id WHERE i.order_id = ?`,
+				`DELETE FROM ` + s.T("woocommerce_order_itemmeta") + ` WHERE order_item_id IN (SELECT order_item_id FROM ` + s.T("woocommerce_order_items") + ` WHERE order_id = ?)`,
 				`DELETE FROM ` + s.T("woocommerce_order_items") + ` WHERE order_id = ?`,
 				`DELETE FROM ` + s.T("wc_orders_meta") + ` WHERE order_id = ?`,
 				`DELETE FROM ` + s.T("wc_order_addresses") + ` WHERE order_id = ?`,

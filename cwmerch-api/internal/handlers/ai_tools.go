@@ -52,6 +52,10 @@ func (h *AIHandler) aiTools() []ai.Tool {
 				"say so and do not retry. Use GET to read. POST/PUT/DELETE change the shop (create a product, " +
 				"change an order status, refund, add a note, edit a coupon...): ONLY after you described the exact " +
 				"change and the user explicitly agreed, and then pass confirmed=true — a write without it is refused. " +
+				"Read-only POSTs (pricing a cart, testing a payment provider, testing a database connection for the " +
+				"clone) need no confirmation. Cloning data between databases (MySQL/MariaDB <-> PostgreSQL, export or " +
+				"import, administrators only) always starts with POST /v1/admin/clone/test, then the user's explicit yes, " +
+				"then POST /v1/admin/clone with confirm=true, then GET /v1/admin/clone/job until it is done. " +
 				"A PDF export (accounting turnover / balance / grand livre with ?format=pdf) comes back as a " +
 				"temporary download link to give the user verbatim. The skill lists the useful paths.",
 			Parameters: map[string]any{
@@ -97,7 +101,7 @@ func (h *AIHandler) runTool(r *http.Request, call ai.ToolCall) string {
 		}
 		_ = json.Unmarshal(call.Args, &args)
 		m := strings.ToUpper(strings.TrimSpace(args.Method))
-		if m != "" && m != http.MethodGet && !args.Confirmed {
+		if m != "" && m != http.MethodGet && !args.Confirmed && !(m == http.MethodPost && readOnlyPost(args.Path)) {
 			return aiToolJSON(map[string]any{"error": "write refused: describe the exact change to the user, ask for their explicit " +
 				"agreement, and only then call again with confirmed=true"})
 		}
@@ -311,4 +315,21 @@ func aiToolJSON(value any) string {
 func aiToolErrorJSON(message string) string {
 	encoded, _ := json.Marshal(map[string]string{"error": message})
 	return string(encoded)
+}
+
+// readOnlyPost tells the POSTs that change nothing (they only compute or
+// check), which the assistant may run without asking for a confirmation.
+func readOnlyPost(path string) bool {
+	p := strings.TrimSpace(path)
+	if i := strings.IndexAny(p, "?#"); i >= 0 {
+		p = p[:i]
+	}
+	p = strings.TrimSuffix(p, "/")
+	switch {
+	case p == "/v1/shop/cart", p == "/v1/admin/clone/test":
+		return true
+	case strings.HasPrefix(p, "/v1/admin/payment-providers/") && strings.HasSuffix(p, "/test") && strings.Count(p, "/") == 5:
+		return true
+	}
+	return false
 }
