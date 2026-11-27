@@ -58,12 +58,15 @@ func toUserMeResponse(u models.User) models.UserMeResponse {
 // ListUsers returns one page of accounts as a SearchResult envelope, for the
 // superuser's user-management screen (infinite-scroll), the CLI's
 // `cwmerch admin user` lookups and the assistant's admin user lookups.
-// ?term= filters by name/surname/email/id (case-insensitive substring, so a
+// ?term= (or ?search=) filters by name/surname/email/id (case-insensitive substring, so a
 // UUID id matches too), ?role= filters by global role, and ?startIndex (0-based
 // page) / ?maxResults page the result.
 func (h *AdminHandler) ListUsers(w http.ResponseWriter, r *http.Request) {
 	startIndex, maxResults := pagedParams(r)
 	term := strings.TrimSpace(r.URL.Query().Get("term"))
+	if term == "" { // the back office sends ?search= like its other lists
+		term = strings.TrimSpace(r.URL.Query().Get("search"))
+	}
 	role := strings.TrimSpace(r.URL.Query().Get("role"))
 	users, total, err := h.users.List(r.Context(), term, role, maxResults, startIndex*maxResults)
 	if err != nil {

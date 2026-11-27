@@ -476,15 +476,18 @@ func (s *UserStore) patchExtras(ctx context.Context, id string, fn func(d *cwmer
 	return s.FindByID(ctx, id)
 }
 
-// List pages through users, filtered by a term (email, login, display name)
-// and a cwmerch role.
+// List pages through users, filtered by a term and a cwmerch role. Every word
+// of the term must appear in the email, login, display name, nicename or
+// first/last name (or be the user's ID).
 func (s *UserStore) List(ctx context.Context, term, role string, limit, offset int) ([]models.User, int64, error) {
 	where := "1=1"
 	args := []any{}
-	if t := strings.TrimSpace(term); t != "" {
-		like := "%" + t + "%"
-		where += " AND (u.user_email LIKE ? OR u.user_login LIKE ? OR u.display_name LIKE ?)"
-		args = append(args, like, like, like)
+	for _, word := range strings.Fields(term) {
+		like := "%" + likeEscape(word) + "%"
+		id, _ := strconv.ParseUint(word, 10, 64)
+		where += " AND (u.ID = ? OR u.user_email LIKE ? OR u.user_login LIKE ? OR u.display_name LIKE ? OR u.user_nicename LIKE ? OR EXISTS (SELECT 1 FROM " +
+			s.db.T("usermeta") + " nm WHERE nm.user_id = u.ID AND nm.meta_key IN ('first_name', 'last_name', 'nickname') AND nm.meta_value LIKE ?))"
+		args = append(args, id, like, like, like, like, like)
 	}
 	switch models.GlobalRole(role) {
 	case models.GlobalRoleSuperuser:
@@ -679,4 +682,10 @@ func (s *UserStore) SearchByEmail(ctx context.Context, query string, limit int) 
 		return nil, err
 	}
 	return s.scanUsers(ctx, rows)
+}
+
+// likeEscape escapes LIKE wildcards so "%" or "_" in a search are literal
+// (backslash is the default LIKE escape on MySQL/MariaDB and PostgreSQL).
+func likeEscape(s string) string {
+	return strings.NewReplacer(`\`, `\\`, `%`, `\%`, `_`, `\_`).Replace(s)
 }

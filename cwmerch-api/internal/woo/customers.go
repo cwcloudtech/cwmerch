@@ -100,16 +100,17 @@ func (s *Store) customerWhere() (string, []any) {
 		AND (cm.meta_value LIKE '%"administrator"%' OR cm.meta_value LIKE '%"shop_manager"%'))`, []any{s.customerCapsKey()}
 }
 
-// ListCustomers lists customers, newest first, searching email, login,
-// display name and first/last name.
+// ListCustomers lists customers, newest first; every word of the search must
+// appear in the email, login, display name, first/last name, billing email,
+// phone or company (or be the customer's ID).
 func (s *Store) ListCustomers(ctx context.Context, search string, page, perPage int) (Paged[ShopCustomer], error) {
 	page, perPage, offset := Page(page, perPage)
 	where, args := s.customerWhere()
-	if t := strings.TrimSpace(search); t != "" {
-		like := "%" + t + "%"
-		where += ` AND (u.user_email LIKE ? OR u.user_login LIKE ? OR u.display_name LIKE ? OR EXISTS (SELECT 1 FROM ` +
-			s.T("usermeta") + ` nm WHERE nm.user_id = u.ID AND nm.meta_key IN ('first_name','last_name','billing_email','billing_phone') AND nm.meta_value LIKE ?))`
-		args = append(args, like, like, like, like)
+	for _, word := range searchTerms(search) {
+		like := "%" + likeEscape(word) + "%"
+		where += ` AND (u.ID = ? OR u.user_email LIKE ? OR u.user_login LIKE ? OR u.display_name LIKE ? OR EXISTS (SELECT 1 FROM ` +
+			s.T("usermeta") + ` nm WHERE nm.user_id = u.ID AND nm.meta_key IN ('first_name','last_name','billing_email','billing_phone','billing_company','billing_first_name','billing_last_name') AND nm.meta_value LIKE ?))`
+		args = append(args, ParseID(word), like, like, like, like)
 	}
 	var total int64
 	if err := s.DB.QueryRowContext(ctx, `SELECT COUNT(*) FROM `+s.T("users")+` u WHERE `+where, args...).Scan(&total); err != nil {

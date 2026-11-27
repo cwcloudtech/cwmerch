@@ -17,11 +17,22 @@ const (
 // maxResults is clamped to maxAdminPageSize. The row offset is startIndex *
 // maxResults.
 func pagedParams(r *http.Request) (startIndex, maxResults int) {
-	startIndex, _ = strconv.Atoi(r.URL.Query().Get("startIndex"))
+	q := r.URL.Query()
+	startIndex, _ = strconv.Atoi(q.Get("startIndex"))
+	// The back office pages with ?page (1-based) & ?perPage like the other
+	// admin lists; accept both shapes.
+	if q.Get("startIndex") == "" {
+		if page, err := strconv.Atoi(q.Get("page")); err == nil && page > 0 {
+			startIndex = page - 1
+		}
+	}
 	if startIndex < 0 {
 		startIndex = 0
 	}
-	maxResults, _ = strconv.Atoi(r.URL.Query().Get("maxResults"))
+	maxResults, _ = strconv.Atoi(q.Get("maxResults"))
+	if q.Get("maxResults") == "" {
+		maxResults, _ = strconv.Atoi(q.Get("perPage"))
+	}
 	if maxResults < 1 {
 		maxResults = defaultAdminPageSize
 	}
