@@ -95,7 +95,7 @@ Plus:
 | `cwmerch-api/` | Go API (chi, database/sql + MySQL driver). `internal/woo` is WooCommerce's storage, `internal/store` cwmerch's own tables, `internal/handlers` the HTTP layer. |
 | `cwmerch-ui/` | React (Vite, plain JavaScript): storefront, customer account, back office and AI assistant. |
 | `cwmerch-db/` | Flyway migrations: `V1` the WooCommerce schema, `V2` cwmerch's `cwmerch_*` tables, `V3` WooCommerce's default options and terms. |
-| `.docker/nginx/` | The UI's nginx config (plain SPA) and entrypoint (`envsubst` of the environment). |
+| `.docker/nginx/` | The UI's nginx config (SPA, SEO pages loaded from the API's public URL) and entrypoint (`envsubst`). |
 | `docs/API.md` | Overview of the API (the exhaustive reference is the generated OpenAPI). |
 | `ci/` | Delivery: builds and pushes the `cwmerch-api` and `cwmerch-ui` images to the registry. |
 
@@ -206,7 +206,11 @@ WooCommerce's permalinks (`woocommerce_permalinks`, including `%product_cat%` ba
 categories) and the shop page slug, with WooCommerce's localized defaults (`/produit/…` on a French
 WordPress). *Settings → Permalinks* edits them in the same option (WordPress rebuilds its rewrite rules).
 The UI resolves the paths dynamically. The API's SEO renderer (`/v1/seo/html?path=…`), `/sitemap.xml`
-and `/robots.txt` are served by the API; the UI's nginx is a plain SPA and does not proxy them.
+and `/robots.txt` are served publicly by the API; the UI's nginx loads them under its own address from
+the API's **public** URL (`CWMERCH_API_URL`, the browser's one), so every non-file, non-app path is
+rendered by the API, with a fallback to the plain SPA shell when the API is unreachable. The API fetches
+the UI's `index.html` from the UI's public URL (`CWMERCH_UI_URL`). Both URLs must therefore be reachable
+from the containers (with `localhost` URLs, as in the default compose, the SEO pages fall back to the SPA).
 
 ## Emails and contact form
 
@@ -302,7 +306,6 @@ The former `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PA
 | `STRIPE_*`, `KONNECT_*`, `FLOUCI_*` | — | Payment credentials from the environment (see `.env.example`) |
 | `CWMERCH_API_URL` / `CWMERCH_UI_URL` | `http://localhost:8080` / `http://localhost:3000` | Public URLs |
 | `CWMERCH_SHOP_URL` | UI URL | Storefront URL for permalinks, canonical links and the sitemap |
-| `CWMERCH_UI_INTERNAL_URL` | `http://ui` | Where the API fetches the UI's `index.html` for SEO rendering |
 | `CWMERCH_CORS_ENABLED`, `CWMERCH_CORS_ALLOWED_ORIGINS` | off, `*` | CORS |
 | `CWMERCH_ACTIVATION_MODE` | `auto` | New customer accounts: `auto`, `email` (confirmation link), `admin` (approval) |
 | `CWMERCH_PASSWORD_HASH` | `bcrypt` | `bcrypt` (WordPress ≥ 6.8) or `phpass` |
@@ -319,7 +322,8 @@ The former `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PA
 
 UI container: only `CWMERCH_API_URL` (public API URL for the browser). The build keeps the
 `${CWMERCH_API_URL}` placeholder (`cwmerch-ui/.env.dist`) and the entrypoint replaces it with `envsubst`
-in the built `.js`, `.css` and `.html` files at start, like comwork-cloud-ui.
+in the built `.js`, `.css` and `.html` files at start, like comwork-cloud-ui. nginx also loads the SEO
+pages, `/sitemap.xml` and `/robots.txt` from that same public URL.
 
 ## Development
 

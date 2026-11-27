@@ -36,9 +36,6 @@ type Config struct {
 	MaxUploadSize      int64
 	APIBaseURL         string
 	UIBaseURL          string
-	// UIInternalURL is where the API fetches the UI's index.html for SEO
-	// rendering (inside the compose network: http://ui).
-	UIInternalURL string
 	// ShopURL is the storefront's public URL (permalinks, canonical links);
 	// defaults to UIBaseURL.
 	ShopURL string
@@ -143,7 +140,6 @@ func Load() Config {
 		MaxUploadSize:            envInt64("CWMERCH_MAX_UPLOAD_SIZE", 10<<20),
 		APIBaseURL:               api,
 		UIBaseURL:                ui,
-		UIInternalURL:            strings.TrimRight(utils.GetEnv("CWMERCH_UI_INTERNAL_URL", "http://ui"), "/"),
 		ShopURL:                  utils.GetBaseUrlFromEnvWithFallback("CWMERCH_SHOP_URL", ui),
 		UploadsDir:               uploadsDir,
 		UploadsURL:               uploadsURL,

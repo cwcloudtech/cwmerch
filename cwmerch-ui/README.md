@@ -23,7 +23,15 @@ The API base URL is not baked into the build: `.env.dist` sets
 `VITE_API_URL="\${CWMERCH_API_URL}"`, so the bundle keeps the `${CWMERCH_API_URL}`
 placeholder. At container start, `.docker/nginx/docker-entrypoint.sh` runs `envsubst`
 on the built `.js`, `.css` and `.html` files with every defined environment variable
-(like comwork-cloud-ui), and `.docker/nginx/default.conf` serves them as a plain SPA.
+(like comwork-cloud-ui), and `.docker/nginx/default.conf` serves them.
+
+SEO: the storefront pages (`/`, `/shop`, products, categories, tags, any path that is
+neither a file nor an app route), `/sitemap.xml` and `/robots.txt` are loaded from the
+API's **public** URL (the same `CWMERCH_API_URL`: `/v1/seo/html?path=…`) and served
+under the UI's own address, falling back to the plain SPA shell (`/index.html`, never
+proxied) when the API is unreachable. The entrypoint splits `CWMERCH_API_URL` into
+origin and base path, and nginx resolves the API's name per request (resolver from
+`/etc/resolv.conf`), so it starts even when the API is down.
 
 | Variable | Default | Used for |
 |---|---|---|

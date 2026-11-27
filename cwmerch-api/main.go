@@ -173,7 +173,7 @@ func main() {
 	go aiDownloads.StartSweeper(ctx)
 
 	reports := handlers.NewReportsHandler(shop)
-	renderer := seo.New(shop, cfg.UIInternalURL, cfg.ShopURL)
+	renderer := seo.New(shop, cfg.UIBaseURL, cfg.ShopURL)
 	cloner := dbclone.New(database)
 	cloner.OnImported = shop.ForgetOptions
 	contactClient := contact.New(cfg.CWCloudAPIURL, cfg.CWCloudContactFormID)

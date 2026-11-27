@@ -1,8 +1,10 @@
 // Package seo renders the storefront's <head> on the server for crawlers and
 // link previews: the UI is a single-page app, so without this every product
-// would share one title. The UI's nginx proxies public page navigations to
-// GET /v1/seo/html?path=..., which answers the UI's own index.html with the
-// region between <!--cwmerch-seo-start--> and <!--cwmerch-seo-end--> replaced.
+// would share one title. GET /v1/seo/html?path=... (public) answers the UI's
+// own index.html, fetched from its public URL (CWMERCH_UI_URL), with the region
+// between <!--cwmerch-seo-start--> and <!--cwmerch-seo-end--> replaced. The
+// UI's nginx loads it under the UI's address through the public API URL
+// (CWMERCH_API_URL).
 package seo
 
 import (
@@ -25,7 +27,7 @@ import (
 // Renderer builds pages' head tags from the shop data.
 type Renderer struct {
 	woo        *woo.Store
-	uiInternal string // where the API fetches index.html (http://ui)
+	uiURL      string // the UI's public URL, where the API fetches index.html
 	publicUI   string // the shop's public URL (canonical links)
 	client     *http.Client
 	mu         sync.Mutex
@@ -33,8 +35,8 @@ type Renderer struct {
 	templateAt time.Time
 }
 
-func New(w *woo.Store, uiInternalURL, publicUIURL string) *Renderer {
-	return &Renderer{woo: w, uiInternal: strings.TrimRight(uiInternalURL, "/"), publicUI: strings.TrimRight(publicUIURL, "/"),
+func New(w *woo.Store, uiURL, publicUIURL string) *Renderer {
+	return &Renderer{woo: w, uiURL: strings.TrimRight(uiURL, "/"), publicUI: strings.TrimRight(publicUIURL, "/"),
 		client: &http.Client{Timeout: 5 * time.Second}}
 }
 
@@ -291,7 +293,8 @@ func Inject(template string, h Head) string {
 	return template
 }
 
-// Template fetches the UI's index.html (cached a minute).
+// Template fetches the UI's index.html from its public URL (cached a minute).
+// nginx serves /index.html as is (never proxied back here), so no loop.
 func (r *Renderer) Template(ctx context.Context) (string, error) {
 	r.mu.Lock()
 	if r.template != "" && time.Since(r.templateAt) < time.Minute {
@@ -299,10 +302,10 @@ func (r *Renderer) Template(ctx context.Context) (string, error) {
 		return r.template, nil
 	}
 	r.mu.Unlock()
-	if r.uiInternal == "" {
-		return "", fmt.Errorf("CWMERCH_UI_INTERNAL_URL is not set")
+	if r.uiURL == "" {
+		return "", fmt.Errorf("CWMERCH_UI_URL is not set")
 	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, r.uiInternal+"/index.html", nil)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, r.uiURL+"/index.html", nil)
 	if err != nil {
 		return "", err
 	}
