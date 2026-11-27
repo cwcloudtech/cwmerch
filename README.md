@@ -51,7 +51,9 @@ The WooCommerce features, on WooCommerce's own storage:
   tax, shipping, payments, accounts, emails, advanced), users, audit trail, IP bans.
   Product descriptions (long and short) use a WYSIWYG editor (Quill, like comwork-cloud-ui's emails)
   with an HTML tab; HTML the visual editor can't keep (Divi blocks, classes, styles, shortcodes) opens in
-  the HTML tab and is never rewritten unless edited.
+  the HTML tab and is never rewritten unless edited. Superusers edit a user (email, names, role, password,
+  MFA removal) from a modal in *Users*; a user changes their own email only through a confirmation link
+  sent to the new address (the current one is notified).
 
 Plus:
 

@@ -83,7 +83,8 @@
     "cloneSameDatabase": "The remote database is the main database",
     "cloneConfirmRequired": "Please confirm the clone",
     "cloneInvalidDirection": "Invalid clone direction",
-    "cloneNotFound": "No clone has been run"
+    "cloneNotFound": "No clone has been run",
+    "emailUnchanged": "This is already your email address."
   },
   "nav": {
     "scrollPrev": "Scroll the menu back",
@@ -360,7 +361,18 @@
     "orders": "Orders",
     "passwordBlank": "Leave blank to keep the current password.",
     "passwordChange": "Password change",
-    "security": "Security"
+    "security": "Security",
+    "emailChange": {
+      "change": "Change email",
+      "newEmail": "New email",
+      "hint": "A confirmation link will be sent to this address; your email only changes once you click it.",
+      "send": "Send the confirmation link",
+      "sent": "A confirmation link has been sent to {{email}}. Your email changes once you click it.",
+      "confirmTitle": "Confirm your new email",
+      "confirmIntro": "Click below to make this your account's email address.",
+      "confirmButton": "Confirm my new email",
+      "confirmed": "Your email is now {{email}}."
+    }
   },
   "security": {
     "addKey": "Register a security key",
@@ -992,7 +1004,12 @@
     "role": "Role",
     "roleChanged": "Role updated.",
     "roleOf": "Role of {{email}}",
-    "search": "Search users"
+    "search": "Search users",
+    "edit": "Edit",
+    "editTitle": "Edit {{email}}",
+    "saved": "User updated.",
+    "ownRole": "You can't change your own role.",
+    "mfaNone": "No MFA method."
   },
   "audit": {
     "action": "Action",

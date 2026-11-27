@@ -155,6 +155,27 @@ func (s *Sender) SendConfirmation(ctx context.Context, to, confirmURL string) {
 	s.cta(ctx, to, "Confirm your account", "Welcome! Please confirm your account by clicking the button below.", "Confirm my account", confirmURL)
 }
 
+// SendEmailChange emails the link confirming a new email address (sent to
+// the NEW address: the change only happens once it is clicked).
+func (s *Sender) SendEmailChange(ctx context.Context, to, confirmURL string) {
+	s.cta(ctx, to, "Confirm your new email address", "Please confirm that this is your new email address by clicking the button below. Until then, your account keeps its current email.", "Confirm my new email", confirmURL)
+}
+
+// SendEmailChangeNotice tells the CURRENT address that a change to another
+// one was requested (nothing changes until the new address confirms it).
+func (s *Sender) SendEmailChangeNotice(ctx context.Context, to, newEmail string) {
+	body := template.HTML(fmt.Sprintf(`<p>%s</p><p style="%s">%s</p>`,
+		template.HTMLEscapeString("A change of your account's email address to "+newEmail+" was requested. It only takes effect once confirmed from that address."),
+		mutedStyle, "If you did not ask for this, change your password and ignore the confirmation email."))
+	title := "Email address change requested"
+	html, err := s.RenderLayout(title, body)
+	if err != nil {
+		slog.ErrorContext(ctx, "failed to render email", "error", err)
+		return
+	}
+	s.Send(ctx, "", to, "", "", title, html, nil)
+}
+
 // SendPasswordReset emails the password-renewal link.
 func (s *Sender) SendPasswordReset(ctx context.Context, to, resetURL string) {
 	s.cta(ctx, to, "Reset your password", "We received a request to reset your password.", "Choose a new password", resetURL)

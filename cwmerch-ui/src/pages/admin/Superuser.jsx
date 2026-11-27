@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Navigate } from "react-router-dom";
 import { toast } from "react-toastify";
-import { FiGlobe, FiShieldOff, FiTrash2 } from "react-icons/fi";
+import { FiEdit2, FiGlobe, FiShieldOff, FiTrash2 } from "react-icons/fi";
 import { api, asArray, normalizePaged } from "../../api/client";
 import { useAsync } from "../../lib/useAsync";
 import { ROLES } from "../../lib/util";
@@ -63,6 +63,106 @@ const UserIps = ({ user, onClose }) => {
   );
 };
 
+// EditUser: an administrator edits a user's email, names, role and password
+// (PUT /v1/admin/users/{id}); the email changes at once (no confirmation,
+// unlike a user changing their own).
+const EditUser = ({ user, self, onClose, onSaved }) => {
+  const { t, errMsg } = useI18n();
+  const [form, setForm] = useState({ email: user.email || "", name: user.name || "", surname: user.surname || "", role: user.role, password: "" });
+  const [mfaOn, setMfaOn] = useState(!!user.mfaEnabled);
+  const [confirmMfa, setConfirmMfa] = useState(false);
+
+  // Removes every MFA method (TOTP, passkeys) of the user.
+  const removeMfa = async () => {
+    setConfirmMfa(false);
+    try {
+      await api.post(`/v1/admin/users/${user.id}/disable-mfa`, {});
+      setMfaOn(false);
+      toast.success(t("users.mfaDisabled"));
+      onSaved(false);
+    } catch (err) {
+      setError(errMsg(err));
+    }
+  };
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(null);
+  const set = (k) => (v) => setForm((f) => ({ ...f, [k]: v }));
+
+  const save = async (e) => {
+    e.preventDefault();
+    setBusy(true);
+    setError(null);
+    try {
+      const body = { email: form.email.trim(), name: form.name.trim(), surname: form.surname.trim() };
+      if (!self && form.role !== user.role) body.role = form.role;
+      if (form.password) body.password = form.password;
+      await api.put(`/v1/admin/users/${user.id}`, body);
+      toast.success(t("users.saved"));
+      onSaved(true);
+    } catch (err) {
+      setError(errMsg(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <Modal show title={t("users.editTitle", { email: user.email })} onClose={onClose}>
+      <form className="stack" onSubmit={save}>
+        <TextField label={t("auth.email")} type="email" value={form.email} onChange={set("email")} required autoComplete="off" />
+        <div className="form-grid">
+          <TextField label={t("auth.firstName")} value={form.name} onChange={set("name")} autoComplete="off" />
+          <TextField label={t("auth.lastName")} value={form.surname} onChange={set("surname")} autoComplete="off" />
+        </div>
+        <label className="field">
+          <span className="field-label">{t("users.role")}</span>
+          <select className="input" value={form.role} onChange={(e) => set("role")(e.target.value)} disabled={self}>
+            {ROLES.map((r) => (
+              <option key={r} value={r}>
+                {t(`roles.${r}`)}
+              </option>
+            ))}
+          </select>
+          {self && <span className="hint">{t("users.ownRole")}</span>}
+        </label>
+        <TextField label={t("auth.newPassword")} hint={t("account.passwordBlank")} type="password" value={form.password} onChange={set("password")} autoComplete="new-password" />
+        <fieldset className="fieldset stack">
+          <legend>MFA</legend>
+          {mfaOn ? (
+            <div className="row wrap">
+              <span className="grow">
+                <span className="badge badge-completed">{t("common.on")}</span>
+              </span>
+              <button type="button" className="btn btn-secondary btn-sm danger" onClick={() => setConfirmMfa(true)}>
+                <FiShieldOff aria-hidden="true" /> {t("users.disableMfa")}
+              </button>
+            </div>
+          ) : (
+            <p className="muted small">{t("users.mfaNone")}</p>
+          )}
+        </fieldset>
+        <ErrorBox error={error} />
+        <div className="row end">
+          <button type="button" className="btn btn-secondary" onClick={onClose}>
+            {t("common.cancel")}
+          </button>
+          <button type="submit" className="btn btn-primary" disabled={busy || !form.email.trim()}>
+            {t("common.saveChanges")}
+          </button>
+        </div>
+      </form>
+      <ConfirmModal
+        show={confirmMfa}
+        title={t("users.disableMfa")}
+        body={t("users.disableMfaBody", { email: user.email })}
+        confirmLabel={t("users.disableMfa")}
+        onConfirm={removeMfa}
+        onCancel={() => setConfirmMfa(false)}
+      />
+    </Modal>
+  );
+};
+
 export const Users = () => {
   const { t, errMsg, formatDate } = useI18n();
   const { user: me } = useAuth();
@@ -72,6 +172,7 @@ export const Users = () => {
   const [deleting, setDeleting] = useState(null);
   const [mfaOff, setMfaOff] = useState(null);
   const [ips, setIps] = useState(null);
+  const [editing, setEditing] = useState(null);
   const { data, loading, error, reload } = useAsync(
     async () => normalizePaged((await api.get("/v1/admin/users", { params: { page, perPage: 20, search: search || undefined, role: role || undefined } })).data, page),
     [page, search, role],
@@ -165,6 +266,9 @@ export const Users = () => {
                   <td>{u.mfaEnabled ? <span className="badge badge-completed">{t("common.on")}</span> : <span className="muted">—</span>}</td>
                   <td className="small">{formatDate(u.createdAt)}</td>
                   <td className="row-actions">
+                    <button type="button" className="icon-btn" onClick={() => setEditing(u)} aria-label={t("users.edit")} title={t("users.edit")}>
+                      <FiEdit2 />
+                    </button>
                     <button type="button" className="icon-btn" onClick={() => setIps(u)} aria-label={t("users.ips")} title={t("users.ips")}>
                       <FiGlobe />
                     </button>
@@ -188,6 +292,17 @@ export const Users = () => {
       )}
       <Pagination page={page} totalPages={data.totalPages} onChange={setPage} />
       {ips && <UserIps user={ips} onClose={() => setIps(null)} />}
+      {editing && (
+        <EditUser
+          user={editing}
+          self={editing.id === me?.id}
+          onClose={() => setEditing(null)}
+          onSaved={(close) => {
+            if (close) setEditing(null);
+            reload();
+          }}
+        />
+      )}
       <ConfirmModal
         show={!!mfaOff}
         title={t("users.disableMfa")}

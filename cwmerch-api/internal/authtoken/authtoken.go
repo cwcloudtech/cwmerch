@@ -29,6 +29,8 @@ func Generate(secret, userID string) (string, error) {
 const (
 	PurposeConfirmAccount = "confirm_account"
 	PurposeResetPassword  = "reset_password"
+	// PurposeChangeEmail confirms a new email address (data: {email, from}).
+	PurposeChangeEmail = "change_email"
 	// PurposeMFALogin scopes the short-lived token handed back by Login when
 	// the password was correct but the account has MFA enabled (see
 	// ai-instruct-68) - it authorizes finishing the login via one of the

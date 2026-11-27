@@ -41,6 +41,7 @@ const (
 	CodeInvalidRole                 = "errors.invalidRole"
 	CodeInvalidDailyRate            = "errors.invalidDailyRate"
 	CodeInvalidEmail                = "errors.invalidEmail"
+	CodeEmailUnchanged              = "errors.emailUnchanged"
 	CodeInvalidCurrency             = "errors.invalidCurrency"
 	CodeCantDeleteOwnAccount        = "errors.cantDeleteOwnAccount"
 	CodeInvalidAdminUserEdit        = "errors.invalidAdminUserEdit"

@@ -83,7 +83,8 @@
     "cloneSameDatabase": "La base distante est la base principale",
     "cloneConfirmRequired": "Veuillez confirmer le clonage",
     "cloneInvalidDirection": "Sens de clonage invalide",
-    "cloneNotFound": "Aucun clonage n'a été lancé"
+    "cloneNotFound": "Aucun clonage n'a été lancé",
+    "emailUnchanged": "C'est déjà votre adresse e-mail."
   },
   "nav": {
     "scrollPrev": "Faire défiler le menu vers l'arrière",
@@ -360,7 +361,18 @@
     "orders": "Commandes",
     "passwordBlank": "Laissez vide pour conserver le mot de passe actuel.",
     "passwordChange": "Changement de mot de passe",
-    "security": "Sécurité"
+    "security": "Sécurité",
+    "emailChange": {
+      "change": "Changer d'e-mail",
+      "newEmail": "Nouvel e-mail",
+      "hint": "Un lien de confirmation sera envoyé à cette adresse ; votre e-mail ne change qu'une fois ce lien cliqué.",
+      "send": "Envoyer le lien de confirmation",
+      "sent": "Un lien de confirmation a été envoyé à {{email}}. Votre e-mail changera une fois le lien cliqué.",
+      "confirmTitle": "Confirmez votre nouvel e-mail",
+      "confirmIntro": "Cliquez ci-dessous pour faire de cette adresse l'e-mail de votre compte.",
+      "confirmButton": "Confirmer mon nouvel e-mail",
+      "confirmed": "Votre e-mail est désormais {{email}}."
+    }
   },
   "security": {
     "addKey": "Enregistrer une clé de sécurité",
@@ -992,7 +1004,12 @@
     "role": "Rôle",
     "roleChanged": "Rôle mis à jour.",
     "roleOf": "Rôle de {{email}}",
-    "search": "Rechercher des utilisateurs"
+    "search": "Rechercher des utilisateurs",
+    "edit": "Modifier",
+    "editTitle": "Modifier {{email}}",
+    "saved": "Utilisateur mis à jour.",
+    "ownRole": "Vous ne pouvez pas changer votre propre rôle.",
+    "mfaNone": "Aucune méthode MFA."
   },
   "audit": {
     "action": "Action",

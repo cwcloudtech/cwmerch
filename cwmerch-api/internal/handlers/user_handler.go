@@ -486,3 +486,93 @@ func (h *UserHandler) ResetPassword(w http.ResponseWriter, r *http.Request) {
 
 	writeJSON(w, http.StatusOK, map[string]string{"message": "Password updated."})
 }
+
+type changeEmailPayload struct {
+	Email string `json:"email"`
+}
+
+type changeEmailData struct {
+	Email string `json:"email"`
+	From  string `json:"from"`
+}
+
+// RequestEmailChange is POST /v1/users/me/email: the new address only replaces
+// the current one once confirmed through the link emailed to it (the current
+// address is told about the request).
+func (h *UserHandler) RequestEmailChange(w http.ResponseWriter, r *http.Request) {
+	userID, _ := middleware.UserIDFromContext(r.Context())
+	var p changeEmailPayload
+	if err := json.NewDecoder(r.Body).Decode(&p); err != nil {
+		writeError(w, http.StatusBadRequest, "Invalid request body", CodeInvalidRequestBody)
+		return
+	}
+	newEmail := strings.TrimSpace(p.Email)
+	if !utils.IsValidEmail(newEmail) {
+		writeError(w, http.StatusBadRequest, "Please add a valid email", CodeInvalidEmail)
+		return
+	}
+	user, err := h.users.FindByID(r.Context(), userID)
+	if err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	if strings.EqualFold(newEmail, user.Email) {
+		writeError(w, http.StatusBadRequest, "This is already your email", CodeEmailUnchanged)
+		return
+	}
+	if other, err := h.users.FindByEmail(r.Context(), newEmail); err == nil && other.ID != user.ID {
+		writeError(w, http.StatusBadRequest, "Email already in use", CodeDuplicateEmail)
+		return
+	}
+	token, err := authtoken.GeneratePurposeWithData(h.jwtSecret, user.ID, authtoken.PurposeChangeEmail, h.confirmationTokenTTL,
+		changeEmailData{Email: newEmail, From: user.Email})
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, err.Error(), CodeInternal)
+		return
+	}
+	confirmURL := h.uiBaseURL + "/confirm-email?token=" + url.QueryEscape(token)
+	h.mailer.SendEmailChange(r.Context(), newEmail, confirmURL)
+	h.mailer.SendEmailChangeNotice(r.Context(), user.Email, newEmail)
+	h.record(r, models.AuditAccountEmailChangeRequested, models.AuditSubjectUser, user.ID, map[string]any{"from": user.Email, "to": newEmail})
+	writeJSON(w, http.StatusAccepted, map[string]string{"message": "A confirmation link has been sent to the new email address.", "pendingEmail": newEmail})
+}
+
+type confirmEmailPayload struct {
+	Token string `json:"token"`
+}
+
+// ConfirmEmailChange is POST /v1/users/email/confirm: applies the change the
+// token carries, only if the account still has the email it was requested
+// from (an older link can't undo a later change) and the new one is free.
+func (h *UserHandler) ConfirmEmailChange(w http.ResponseWriter, r *http.Request) {
+	var p confirmEmailPayload
+	if err := json.NewDecoder(r.Body).Decode(&p); err != nil || utils.IsBlank(p.Token) {
+		writeError(w, http.StatusBadRequest, "Please add a token", CodeInvalidToken)
+		return
+	}
+	var data changeEmailData
+	userID, err := authtoken.ParsePurposeWithData(h.jwtSecret, p.Token, authtoken.PurposeChangeEmail, &data)
+	if err != nil || utils.IsBlank(data.Email) {
+		writeError(w, http.StatusBadRequest, "Invalid or expired link", CodeInvalidToken)
+		return
+	}
+	user, err := h.users.FindByID(r.Context(), userID)
+	if err != nil || user.Role == models.GlobalRoleBan {
+		writeError(w, http.StatusBadRequest, "Invalid or expired link", CodeInvalidToken)
+		return
+	}
+	if strings.EqualFold(user.Email, data.Email) {
+		writeJSON(w, http.StatusOK, map[string]string{"email": user.Email}) // already applied
+		return
+	}
+	if !strings.EqualFold(user.Email, data.From) {
+		writeError(w, http.StatusBadRequest, "Invalid or expired link", CodeInvalidToken)
+		return
+	}
+	if err := h.users.UpdateEmail(r.Context(), user.ID, data.Email); err != nil {
+		writeStoreError(w, err)
+		return
+	}
+	h.recordAs(r.Context(), user.ID, models.AuditAccountEmailChanged, models.AuditSubjectUser, user.ID, map[string]any{"from": data.From, "to": data.Email})
+	writeJSON(w, http.StatusOK, map[string]string{"email": data.Email})
+}

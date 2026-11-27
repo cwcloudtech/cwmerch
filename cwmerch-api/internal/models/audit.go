@@ -11,11 +11,13 @@ const (
 	AuditSignedIn       = "auth.signedIn"
 	AuditSignedOut      = "auth.signedOut"
 
-	AuditAccountRegistered    = "account.registered"
-	AuditAccountConfirmed     = "account.confirmed"
-	AuditAccountPasswordReset = "account.passwordReset"
-	AuditAccountUpdated       = "account.updated"
-	AuditAddressesUpdated     = "account.addressesUpdated"
+	AuditAccountRegistered           = "account.registered"
+	AuditAccountConfirmed            = "account.confirmed"
+	AuditAccountPasswordReset        = "account.passwordReset"
+	AuditAccountUpdated              = "account.updated"
+	AuditAccountEmailChangeRequested = "account.emailChangeRequested"
+	AuditAccountEmailChanged         = "account.emailChanged"
+	AuditAddressesUpdated            = "account.addressesUpdated"
 
 	AuditUserRoleChanged    = "user.roleChanged"
 	AuditUserUpdatedByAdmin = "user.updatedByAdmin"

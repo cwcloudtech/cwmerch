@@ -14,6 +14,7 @@ import Payment from "./pages/shop/Payment";
 import Contact from "./pages/shop/Contact";
 import ForgotPassword from "./pages/shop/ForgotPassword";
 import ResetPassword from "./pages/shop/ResetPassword";
+import ConfirmEmail from "./pages/shop/ConfirmEmail";
 import AccountLayout from "./pages/account/AccountLayout";
 import AccountDashboard from "./pages/account/Dashboard";
 import { Downloads, Orders as MyOrders, ViewOrder } from "./pages/account/Orders";
@@ -48,6 +49,7 @@ const App = () => {
             <Route path="contact" element={<Contact />} />
             <Route path="forgot-password" element={<ForgotPassword />} />
             <Route path="reset-password" element={<ResetPassword />} />
+            <Route path="confirm-email" element={<ConfirmEmail />} />
             <Route path="oidc/callback" element={<OidcCallback />} />
             <Route
               path="assistant"

@@ -46,7 +46,9 @@ API. This file is the human overview of the same surface.
 | `POST /v1/users/reset-password` | `{token, password, confirmPassword}` |
 | `GET /v1/oidc/` | `[{name:"google", label:"Google"}]` enabled providers |
 | `GET /v1/oidc/google/login?redirect=/my-account` | 302 to Google; back to UI `/oidc/callback#token=...` |
-| `GET /v1/users/me` / `PUT /v1/users/me` | `{name, surname, displayName, password?, confirmPassword?}` |
+| `GET /v1/users/me` / `PUT /v1/users/me` | `{name, surname, displayName, password?, confirmPassword?}` (no email: see below) |
+| `POST /v1/users/me/email` | `{email}` → 202: emails a confirmation link (`<UI>/confirm-email?token=`) to the NEW address and a notice to the current one; the email does not change yet. 400 `errors.invalidEmail`, `errors.emailUnchanged`, `errors.duplicateEmail` |
+| `POST /v1/users/email/confirm` | `{token}` (public) → `{email}`: applies the change, only if the account still has the email it was requested from and the new one is free; 400 `errors.invalidToken` |
 | `POST /v1/users/logout` | audit only |
 | `GET/PUT /v1/users/me/addresses` | `{billing: Address, shipping: Address}` |
 | `GET /v1/users/me/orders` | paged `Order` list of the caller |

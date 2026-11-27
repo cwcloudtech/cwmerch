@@ -107,6 +107,8 @@ func New(h Handlers, c Config) http.Handler {
 			r.Post("/login", h.User.Login)
 			r.Post("/forgot-password", h.User.ForgotPassword)
 			r.Post("/reset-password", h.User.ResetPassword)
+			// public: the link may be opened on another device than the one signed in
+			r.Post("/email/confirm", h.User.ConfirmEmailChange)
 			r.Route("/login/mfa", func(r chi.Router) {
 				r.Post("/totp", h.MFA.LoginTOTP)
 				r.Post("/webauthn/begin", h.MFA.LoginWebAuthnBegin)
@@ -119,6 +121,7 @@ func New(h Handlers, c Config) http.Handler {
 				r.Group(func(r chi.Router) {
 					r.Use(active)
 					r.Put("/me", h.User.UpdateProfile)
+					r.Post("/me/email", h.User.RequestEmailChange)
 					r.Put("/me/picture", h.User.UpdatePicture)
 					r.Route("/me/api-keys", func(r chi.Router) {
 						r.Get("/", h.ApiKey.List)
