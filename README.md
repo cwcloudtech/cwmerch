@@ -317,6 +317,8 @@ The former `MYSQL_HOST`, `MYSQL_PORT`, `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PA
 `WP_TABLE_PREFIX` still work as fallbacks.
 | `JWT_SECRET` | — (required) | Session token signing key |
 | `CWMERCH_SECRET_KEY` | — | Seals payment credentials stored from the administration (`openssl rand -base64 32`) |
+| `CWMERCH_ROOT_USERNAME` / `CWMERCH_ROOT_EMAIL` / `CWMERCH_ROOT_PASSWORD` | — | Root administrator: when all three are set, a background job creates this administrator when neither the username nor the email exists (never modifies an existing account) |
+| `CWMERCH_ROOT_USER_CHECK` | `@hourly` | Cron expression of that check (5 fields or `@hourly`, `@every 30m`...) |
 | `STRIPE_*`, `KONNECT_*`, `FLOUCI_*` | — | Payment credentials from the environment (see `.env.example`) |
 | `CWMERCH_API_URL` / `CWMERCH_UI_URL` | `http://localhost:8080` / `http://localhost:3000` | Public URLs |
 | `CWMERCH_SHOP_URL` | UI URL | Storefront URL for permalinks, canonical links and the sitemap |

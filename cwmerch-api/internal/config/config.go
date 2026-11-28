@@ -73,6 +73,10 @@ type Config struct {
 	AIDownloadSweep    time.Duration
 	// SecretKey seals payment providers' credentials (base64 32 bytes).
 	SecretKey string
+
+	// Root administrator kept by a background check (all three or nothing).
+	RootUsername, RootEmail, RootPassword string
+	RootUserCheck                         string
 }
 
 func envInt(name string, def int) int {
@@ -166,6 +170,10 @@ func Load() Config {
 		AIDownloadMaxBytes:       envInt64("CWMERCH_AI_DOWNLOAD_MAX_BYTES", 25<<20),
 		SecretKey:                os.Getenv("CWMERCH_SECRET_KEY"),
 		AIDownloadSweep:          envDuration("CWMERCH_AI_DOWNLOAD_SWEEP_INTERVAL", 5*time.Minute),
+		RootUsername:             strings.TrimSpace(os.Getenv("CWMERCH_ROOT_USERNAME")),
+		RootEmail:                strings.TrimSpace(os.Getenv("CWMERCH_ROOT_EMAIL")),
+		RootPassword:             os.Getenv("CWMERCH_ROOT_PASSWORD"),
+		RootUserCheck:            strings.TrimSpace(os.Getenv("CWMERCH_ROOT_USER_CHECK")),
 	}
 }
 

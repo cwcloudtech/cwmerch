@@ -501,7 +501,8 @@
       "users": "Users",
       "visitStore": "Visit store",
       "invoices": "Invoices",
-      "clone": "Clone data"
+      "clone": "Clone data",
+      "announcements": "Announcements"
     },
     "orders": {
       "actions": "Order actions",
@@ -760,6 +761,43 @@
         "spam": "Spam",
         "trash": "Trash"
       }
+    },
+    "announcements": {
+      "subtitle": "Banners shown at the top of the shop (promotions, news...). They disappear by themselves after their end date.",
+      "add": "New announcement",
+      "edit": "Edit the announcement",
+      "create": "Create",
+      "title": "Title",
+      "titleHint": "Back office label only (not shown in the shop).",
+      "content": "Content",
+      "placement": "Shown on",
+      "placements": {
+        "home": "Home page",
+        "all": "Every page"
+      },
+      "expiresAt": "Ends on",
+      "expiresHint": "Optional: the announcement disappears after this date.",
+      "background": "Background",
+      "bgTheme": "From the theme (translucent)",
+      "bgCustom": "Custom colour",
+      "color": "Colour",
+      "position": "Order",
+      "positionHint": "Lowest first.",
+      "enabled": "Published",
+      "dismissible": "Visitors can close it",
+      "preview": "Preview",
+      "status": "Status",
+      "allStatuses": "All",
+      "statuses": {
+        "active": "Active",
+        "expired": "Expired",
+        "disabled": "Unpublished"
+      },
+      "updated": "Updated",
+      "none": "No announcement yet.",
+      "enable": "Publish",
+      "disable": "Unpublish",
+      "deleteBody": "Delete the announcement \"{{title}}\"? This cannot be undone."
     }
   },
   "productStatus": {
@@ -1489,5 +1527,9 @@
     "visual": "Visual",
     "html": "HTML",
     "richWarning": "This content has HTML the visual editor can't keep (layout blocks, classes, styles, tables or shortcodes): editing it here would remove it. Use the HTML tab to keep it."
+  },
+  "announcements": {
+    "label": "Announcement",
+    "dismiss": "Hide this announcement"
   }
 }

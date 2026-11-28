@@ -3337,3 +3337,84 @@ pre {
 .rich-editor-source {
   min-height: 140px;
 }
+
+/* ---------------------------------------------------------- announcements */
+.announcements {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+}
+.announcement-card {
+  --announcement-tint: var(--cwmerch-primary);
+  position: relative;
+  padding: 22px 56px;
+  border-radius: 18px;
+  text-align: center;
+  color: var(--cwmerch-text);
+  background:
+    radial-gradient(120% 140% at 0% 0%, color-mix(in srgb, var(--announcement-tint) 30%, transparent), transparent 60%),
+    radial-gradient(120% 140% at 100% 100%, color-mix(in srgb, var(--cwmerch-accent, var(--announcement-tint)) 22%, transparent), transparent 60%),
+    color-mix(in srgb, var(--announcement-tint) 12%, color-mix(in srgb, var(--cwmerch-bg) 70%, transparent));
+  -webkit-backdrop-filter: saturate(170%) blur(16px);
+  backdrop-filter: saturate(170%) blur(16px);
+  border: 1px solid color-mix(in srgb, var(--announcement-tint) 35%, transparent);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.5) inset, 0 18px 40px -24px color-mix(in srgb, var(--announcement-tint) 70%, transparent);
+  overflow-wrap: anywhere;
+}
+.announcement-content > :first-child {
+  margin-top: 0;
+}
+.announcement-content > :last-child {
+  margin-bottom: 0;
+}
+.announcement-content h2,
+.announcement-content h3,
+.announcement-content h4 {
+  margin: 0.2em 0;
+  letter-spacing: 0.02em;
+}
+.announcement-content p {
+  margin: 0.35em 0;
+}
+.announcement-content img {
+  max-width: 100%;
+  height: auto;
+}
+.announcement-content code {
+  display: inline-block;
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px dashed color-mix(in srgb, var(--announcement-tint) 70%, transparent);
+  background: color-mix(in srgb, var(--cwmerch-bg) 75%, transparent);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+.announcement-content .ql-align-center { text-align: center; }
+.announcement-content .ql-align-right { text-align: right; }
+.announcement-content .ql-align-left { text-align: left; }
+.announcement-close {
+  position: absolute;
+  top: 10px;
+  inset-inline-end: 10px;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: 1px solid color-mix(in srgb, var(--cwmerch-text) 15%, transparent);
+  background: color-mix(in srgb, var(--cwmerch-bg) 55%, transparent);
+  color: inherit;
+  cursor: pointer;
+}
+.announcement-close:hover {
+  background: color-mix(in srgb, var(--cwmerch-bg) 85%, transparent);
+}
+@media (max-width: 640px) {
+  .announcement-card {
+    padding: 18px 44px 18px 18px;
+  }
+}
+.rich-editor-quill .ql-snow .ql-editor code {
+  color: inherit;
+  background: color-mix(in srgb, currentColor 14%, transparent);
+}

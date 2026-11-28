@@ -156,6 +156,7 @@ func New(h Handlers, c Config) http.Handler {
 			r.Get("/settings", h.Shop.Settings)
 			r.Get("/countries", h.Shop.Countries)
 			r.Get("/appearance", h.Shop.Appearance)
+			r.Get("/announcements", h.Shop.Announcements)
 			r.Get("/themes", h.Shop.Themes)
 			r.Get("/custom.css", h.Shop.CustomCSS)
 			// paying an order already placed keeps working when the shop closes
@@ -297,6 +298,13 @@ func New(h Handlers, c Config) http.Handler {
 					r.Get("/{id}", h.Customers.Get)
 					r.Put("/{id}", h.Customers.Update)
 					r.Get("/{id}/orders", h.Customers.Orders)
+				})
+				r.Route("/announcements", func(r chi.Router) {
+					r.Get("/", h.ShopAdmin.Announcements)
+					r.Post("/", h.ShopAdmin.CreateAnnouncement)
+					r.Get("/{id}", h.ShopAdmin.Announcement)
+					r.Put("/{id}", h.ShopAdmin.UpdateAnnouncement)
+					r.Delete("/{id}", h.ShopAdmin.DeleteAnnouncement)
 				})
 				r.Route("/coupons", func(r chi.Router) {
 					r.Get("/", h.ShopAdmin.Coupons)

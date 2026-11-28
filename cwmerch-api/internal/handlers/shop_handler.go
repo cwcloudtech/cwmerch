@@ -3,6 +3,7 @@ package handlers
 import (
 	"errors"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
@@ -536,6 +537,35 @@ func (h *ShopHandler) Appearance(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	writeJSON(w, http.StatusOK, a)
+}
+
+// publicAnnouncement is what the storefront gets of an announcement (no
+// back-office label nor authors).
+type publicAnnouncement struct {
+	ID          uint64     `json:"id"`
+	Content     string     `json:"content"`
+	Placement   string     `json:"placement"`
+	Background  string     `json:"background"`
+	Dismissible bool       `json:"dismissible"`
+	ExpiresAt   *time.Time `json:"expiresAt"`
+	UpdatedAt   time.Time  `json:"updatedAt"`
+}
+
+// Announcements is GET /v1/shop/announcements: the enabled, unexpired
+// announcements, in order. Never fails the storefront: an error (the V5
+// migration not applied yet...) is an empty list.
+func (h *ShopHandler) Announcements(w http.ResponseWriter, r *http.Request) {
+	out := []publicAnnouncement{}
+	list, err := h.woo.ActiveAnnouncements(r.Context())
+	if err != nil {
+		slog.WarnContext(r.Context(), "announcements unavailable", "error", err)
+	}
+	for _, a := range list {
+		out = append(out, publicAnnouncement{ID: a.ID, Content: a.Content, Placement: a.Placement, Background: a.Background,
+			Dismissible: a.Dismissible, ExpiresAt: a.ExpiresAt, UpdatedAt: a.UpdatedAt})
+	}
+	w.Header().Set("Cache-Control", "no-cache")
+	writeJSON(w, http.StatusOK, out)
 }
 
 // Themes is GET /v1/shop/themes.

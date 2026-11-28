@@ -501,7 +501,8 @@
       "users": "Utilisateurs",
       "visitStore": "Voir la boutique",
       "invoices": "Factures",
-      "clone": "Cloner les données"
+      "clone": "Cloner les données",
+      "announcements": "Annonces"
     },
     "orders": {
       "actions": "Actions de commande",
@@ -760,6 +761,43 @@
         "spam": "Indésirables",
         "trash": "Corbeille"
       }
+    },
+    "announcements": {
+      "subtitle": "Bannières affichées en haut de la boutique (promotions, actualités...). Elles disparaissent d'elles-mêmes après leur date de fin.",
+      "add": "Nouvelle annonce",
+      "edit": "Modifier l'annonce",
+      "create": "Créer",
+      "title": "Titre",
+      "titleHint": "Libellé pour l'administration uniquement (non affiché dans la boutique).",
+      "content": "Contenu",
+      "placement": "Affichée sur",
+      "placements": {
+        "home": "Page d'accueil",
+        "all": "Toutes les pages"
+      },
+      "expiresAt": "Fin le",
+      "expiresHint": "Facultatif : l'annonce disparaît après cette date.",
+      "background": "Fond",
+      "bgTheme": "Couleur du thème (translucide)",
+      "bgCustom": "Couleur personnalisée",
+      "color": "Couleur",
+      "position": "Ordre",
+      "positionHint": "Les plus petits en premier.",
+      "enabled": "Publiée",
+      "dismissible": "Les visiteurs peuvent la fermer",
+      "preview": "Aperçu",
+      "status": "Statut",
+      "allStatuses": "Toutes",
+      "statuses": {
+        "active": "Active",
+        "expired": "Expirée",
+        "disabled": "Dépubliée"
+      },
+      "updated": "Modifiée",
+      "none": "Aucune annonce pour le moment.",
+      "enable": "Publier",
+      "disable": "Dépublier",
+      "deleteBody": "Supprimer l'annonce « {{title}} » ? Cette action est définitive."
     }
   },
   "productStatus": {
@@ -1489,5 +1527,9 @@
     "visual": "Visuel",
     "html": "HTML",
     "richWarning": "Ce contenu contient du HTML que l'éditeur visuel ne peut pas conserver (blocs de mise en page, classes, styles, tableaux ou shortcodes) : le modifier ici le supprimerait. Utilisez l'onglet HTML pour le conserver."
+  },
+  "announcements": {
+    "label": "Annonce",
+    "dismiss": "Masquer cette annonce"
   }
 }

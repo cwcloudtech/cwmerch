@@ -70,6 +70,7 @@ Resolve today's date from the account context for relative periods ("this month"
 |---|---|
 | Customers | `GET /v1/admin/customers/?search=`, `GET /v1/admin/customers/{id}`, `GET /v1/admin/customers/{id}/orders` |
 | Coupons | `GET /v1/admin/coupons/?search=`; create `POST /v1/admin/coupons/` `{"code":"SUMMER10","discountType":"percent","amount":10,"dateExpires":"2026-08-31T23:59:59Z"}` — confirm first |
+| Announcements (shop banners) | `GET /v1/admin/announcements/?search=&status=active` ; create `POST /v1/admin/announcements/` `{"title":"Green Friday","content":"<h2>GREEN FRIDAY</h2><p>-15 % with <code>GREEN15</code></p>","placement":"home","expiresAt":"2026-11-29T22:59:00Z"}` ; edit `PUT /v1/admin/announcements/{id}` (full object) ; `DELETE` — confirm first |
 | Reviews to moderate | `GET /v1/admin/reviews/?status=hold`; `PUT /v1/admin/reviews/{id}` `{"status":"approved"}` — confirm first |
 | Shop settings | `GET /v1/admin/settings/` (options + field list); taxes `GET /v1/admin/taxes/`; shipping `GET /v1/admin/shipping/zones/`; payments `GET /v1/admin/payment-gateways/` |
 

@@ -10,6 +10,9 @@ import { useI18n } from "../i18n/I18nContext";
 import LanguageSwitcher from "./LanguageSwitcher";
 import ShopClosed from "../pages/shop/ShopClosed";
 import { useVersion } from "../lib/manifest";
+import { api } from "../api/client";
+import { useAsync } from "../lib/useAsync";
+import Announcements from "../components/AnnouncementBanner";
 
 // Public storefront routes replaced by the "closed" page when the shop is off
 // (home, catalogue, product, category, tag, cart, checkout — not order-received/payment).
@@ -166,6 +169,11 @@ const ShopLayout = () => {
   const location = useLocation();
   const [search, setSearch] = useState("");
   const version = useVersion(settings.version);
+  const { data: announcements } = useAsync(
+    () => api.get("/v1/shop/announcements").then(({ data }) => (Array.isArray(data) ? data : [])).catch(() => []),
+    [],
+    []
+  );
 
   const closedHere = shopClosed && isClosedRoute(location.pathname);
   const topCategories = categories.filter((c) => !Number(c.parent) && c.slug !== "uncategorized");
@@ -259,6 +267,7 @@ const ShopLayout = () => {
         </NavScroller>
       </header>
       <main id="main" className="site-main">
+        {!closedHere && <Announcements items={announcements} home={location.pathname === "/"} />}
         {closedHere ? <ShopClosed /> : <Outlet />}
       </main>
       <footer className="site-footer">

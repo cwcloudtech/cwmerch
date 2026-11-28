@@ -9,6 +9,7 @@ import (
 
 	"cwmerch-api/internal/models"
 	"cwmerch-api/internal/store"
+	"cwmerch-api/internal/utils"
 	"cwmerch-api/internal/woo"
 	"cwmerch-api/internal/wooemail"
 )
@@ -600,6 +601,59 @@ func (h *ShopAdminHandler) DeleteCoupon(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 	h.record(r, models.AuditCouponDeleted, models.AuditSubjectCoupon, sid(id), nil)
+	writeJSON(w, http.StatusOK, map[string]any{"id": id})
+}
+
+// ------------------------------------------------------------- announcements
+
+func (h *ShopAdminHandler) Announcements(w http.ResponseWriter, r *http.Request) {
+	q := r.URL.Query()
+	res, err := h.woo.Announcements(r.Context(), strings.TrimSpace(q.Get("search")), strings.TrimSpace(q.Get("status")),
+		queryInt(r, "page", 1), queryInt(r, "perPage", 20))
+	if err != nil {
+		writeWooError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, res)
+}
+
+func (h *ShopAdminHandler) Announcement(w http.ResponseWriter, r *http.Request) {
+	a, err := h.woo.Announcement(r.Context(), idParam(r, "id"))
+	if err != nil {
+		writeWooError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, a)
+}
+
+func (h *ShopAdminHandler) saveAnnouncement(w http.ResponseWriter, r *http.Request, id uint64) {
+	var in woo.AnnouncementInput
+	if !decodeJSON(w, r, &in) {
+		return
+	}
+	saved, err := h.woo.SaveAnnouncement(r.Context(), id, in, callerID(r))
+	if err != nil {
+		writeWooError(w, err)
+		return
+	}
+	h.record(r, models.AuditAnnouncementSaved, models.AuditSubjectAnnouncement, sid(saved.ID), map[string]any{"title": saved.Title})
+	writeJSON(w, utils.If(id == 0, http.StatusCreated, http.StatusOK), saved)
+}
+
+func (h *ShopAdminHandler) CreateAnnouncement(w http.ResponseWriter, r *http.Request) {
+	h.saveAnnouncement(w, r, 0)
+}
+func (h *ShopAdminHandler) UpdateAnnouncement(w http.ResponseWriter, r *http.Request) {
+	h.saveAnnouncement(w, r, idParam(r, "id"))
+}
+
+func (h *ShopAdminHandler) DeleteAnnouncement(w http.ResponseWriter, r *http.Request) {
+	id := idParam(r, "id")
+	if err := h.woo.DeleteAnnouncement(r.Context(), id); err != nil {
+		writeWooError(w, err)
+		return
+	}
+	h.record(r, models.AuditAnnouncementDeleted, models.AuditSubjectAnnouncement, sid(id), nil)
 	writeJSON(w, http.StatusOK, map[string]any{"id": id})
 }
 

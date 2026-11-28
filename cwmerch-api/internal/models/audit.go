@@ -23,6 +23,7 @@ const (
 	AuditUserUpdatedByAdmin = "user.updatedByAdmin"
 	AuditUserDeleted        = "user.deleted"
 	AuditUserMFACleared     = "user.mfaCleared"
+	AuditRootUserCreated    = "user.rootCreated"
 
 	AuditMFATOTPEnabled        = "mfa.totpEnabled"
 	AuditMFATOTPDisabled       = "mfa.totpDisabled"
@@ -56,6 +57,9 @@ const (
 	AuditCouponSaved   = "coupon.saved"
 	AuditCouponDeleted = "coupon.deleted"
 
+	AuditAnnouncementSaved   = "announcement.saved"
+	AuditAnnouncementDeleted = "announcement.deleted"
+
 	AuditSettingsUpdated   = "settings.updated"
 	AuditTaxSaved          = "tax.saved"
 	AuditTaxDeleted        = "tax.deleted"
@@ -88,6 +92,7 @@ const (
 	AuditSubjectMedia        = "media"
 	AuditSubjectOrder        = "order"
 	AuditSubjectCoupon       = "coupon"
+	AuditSubjectAnnouncement = "announcement"
 	AuditSubjectSetting      = "setting"
 	AuditSubjectReview       = "review"
 	AuditSubjectCustomer     = "customer"
@@ -102,6 +107,7 @@ var AuditActions = []string{
 	AuditTermSaved, AuditTermDeleted, AuditAttributeSaved, AuditAttributeDeleted, AuditMediaUploaded,
 	AuditOrderPlaced, AuditOrderCreated, AuditOrderUpdated, AuditOrderStatusChanged, AuditOrderDeleted, AuditOrderNoteAdded,
 	AuditOrderNoteDeleted, AuditOrderRefunded, AuditOrderEmailSent, AuditCouponSaved, AuditCouponDeleted,
+	AuditAnnouncementSaved, AuditAnnouncementDeleted, AuditRootUserCreated,
 	AuditSettingsUpdated, AuditTaxSaved, AuditTaxDeleted, AuditShippingSaved, AuditShippingDeleted, AuditGatewayUpdated,
 	AuditEmailUpdated, AuditAppearanceUpdated, AuditReviewCreated, AuditReviewUpdated, AuditReviewDeleted, AuditReviewReplied,
 	AuditCustomerUpdate, AuditContactSent, AuditAICall,
@@ -109,7 +115,7 @@ var AuditActions = []string{
 
 var AuditSubjectTypes = []string{
 	AuditSubjectUser, AuditSubjectApiKey, AuditSubjectCredential, AuditSubjectAIConnection, AuditSubjectProduct, AuditSubjectTerm,
-	AuditSubjectAttribute, AuditSubjectMedia, AuditSubjectOrder, AuditSubjectCoupon, AuditSubjectSetting, AuditSubjectReview, AuditSubjectCustomer,
+	AuditSubjectAttribute, AuditSubjectMedia, AuditSubjectOrder, AuditSubjectCoupon, AuditSubjectAnnouncement, AuditSubjectSetting, AuditSubjectReview, AuditSubjectCustomer,
 }
 
 // AuditEntry is one recorded act, as the superadmin screen reads it.

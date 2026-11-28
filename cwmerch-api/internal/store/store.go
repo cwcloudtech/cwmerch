@@ -16,6 +16,9 @@ var ErrNotFound = errors.New("not found")
 // ErrDuplicateEmail is returned when an email (or login) is already taken.
 var ErrDuplicateEmail = errors.New("duplicate email")
 
+// ErrDuplicateLogin: the user_login is already taken.
+var ErrDuplicateLogin = errors.New("duplicate login")
+
 func newID() string { return uuid.NewString() }
 
 func notFound(err error) error {

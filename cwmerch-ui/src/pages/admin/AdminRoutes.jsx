@@ -9,6 +9,7 @@ import Products from "./Products";
 import ProductEditor from "./ProductEditor";
 import { Attributes, AttributeTerms, Categories, Tags } from "./Taxonomies";
 import { CouponEditor, Coupons } from "./Coupons";
+import Announcements from "./Announcements";
 import { CustomerDetail, Customers } from "./Customers";
 import Reviews from "./Reviews";
 import Reports from "./Reports";
@@ -34,6 +35,7 @@ const AdminRoutes = () => (
       <Route path="attributes" element={<Attributes />} />
       <Route path="attributes/:id/terms" element={<AttributeTerms />} />
       <Route path="reviews" element={<Reviews />} />
+      <Route path="announcements" element={<Announcements />} />
       <Route path="coupons" element={<Coupons />} />
       <Route path="coupons/new" element={<CouponEditor />} />
       <Route path="coupons/:id" element={<CouponEditor />} />

@@ -30,6 +30,7 @@ import (
 	"cwmerch-api/internal/notify"
 	"cwmerch-api/internal/oidc"
 	"cwmerch-api/internal/payments"
+	"cwmerch-api/internal/rootuser"
 	"cwmerch-api/internal/router"
 	"cwmerch-api/internal/secrets"
 	"cwmerch-api/internal/seo"
@@ -168,6 +169,9 @@ func main() {
 			go wooMailer.SendNewAccount(context.WithoutCancel(ctx), u.Email, u.Name, u.Login, cfg.UIBaseURL+"/my-account")
 		}
 	}
+
+	rootuser.New(rootuser.Config{Username: cfg.RootUsername, Email: cfg.RootEmail, Password: cfg.RootPassword,
+		Schedule: cfg.RootUserCheck, PasswordAlgo: cfg.PasswordHash}, users, audit, tel.Logger, discordText).Start(ctx)
 
 	aiDownloads := aidownload.New(cfg.AIDownloadDir, cfg.AIDownloadTTL, cfg.AIDownloadSweep, cfg.AIDownloadMaxBytes, cfg.APIBaseURL, tel.Logger)
 	go aiDownloads.StartSweeper(ctx)

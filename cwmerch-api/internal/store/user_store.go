@@ -232,6 +232,11 @@ func (s *UserStore) FindByLogin(ctx context.Context, login string) (models.User,
 	return s.findOne(ctx, "u.user_login = ?", login)
 }
 
+// FindByUserLogin matches the WordPress user_login only.
+func (s *UserStore) FindByUserLogin(ctx context.Context, login string) (models.User, error) {
+	return s.findOne(ctx, "u.user_login = ?", strings.TrimSpace(login))
+}
+
 func (s *UserStore) FindByID(ctx context.Context, id string) (models.User, error) {
 	uid := userIDArg(id)
 	if uid == 0 {
@@ -349,14 +354,33 @@ func (s *UserStore) setWPRole(ctx context.Context, q db.Querier, uid uint64, wpR
 
 // CreateWP inserts a WordPress user with wpRole and the cwmerch status.
 func (s *UserStore) CreateWP(ctx context.Context, email, passwordHash, name, surname, wpRole, status string) (models.User, error) {
+	return s.createWP(ctx, "", email, passwordHash, name, surname, wpRole, status)
+}
+
+// CreateAdministrator inserts a WordPress administrator with the given
+// user_login (the root account of CWMERCH_ROOT_*). The login must be free.
+func (s *UserStore) CreateAdministrator(ctx context.Context, login, email, passwordHash string) (models.User, error) {
+	login = strings.TrimSpace(login)
+	if login == "" {
+		return models.User{}, ErrNotFound
+	}
+	if _, err := s.findOne(ctx, "u.user_login = ?", login); err == nil {
+		return models.User{}, ErrDuplicateLogin
+	}
+	return s.createWP(ctx, login, email, passwordHash, "", "", WPRoleAdministrator, "")
+}
+
+func (s *UserStore) createWP(ctx context.Context, login, email, passwordHash, name, surname, wpRole, status string) (models.User, error) {
 	if _, err := s.FindByEmail(ctx, email); err == nil {
 		return models.User{}, ErrDuplicateEmail
 	}
 	var id uint64
 	err := s.db.InTx(ctx, func(tx *sql.Tx) error {
-		login, err := s.uniqueLogin(ctx, tx, email)
-		if err != nil {
-			return err
+		var err error
+		if login == "" {
+			if login, err = s.uniqueLogin(ctx, tx, email); err != nil {
+				return err
+			}
 		}
 		display := strings.TrimSpace(name + " " + surname)
 		if display == "" {
