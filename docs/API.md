@@ -196,7 +196,8 @@ Same contract as cwclock:
   — `AIConnection` = `{id, ownerId, name, provider, baseUrl, model, maxTokens, hasToken, role:"owner|user", createdAt, updatedAt}`, the write payload adds `token`.
 * `POST /v1/ai/chat` `{message, connectionId?, conversationId?, messages?:[{role, message}], settings?}` →
   `{status, message (Markdown answer), usage, model, conversationId, title, downloadTtlSeconds?}`.
-  The agent loop calls cwmerch's own API **with the caller's JWT** (tool `cwmerch_api`), guided by the embedded Markdown skills;
+  The agent loop calls cwmerch's own API **with the caller's JWT** (tool `cwmerch_api`), guided by the embedded Markdown skills,
+  with every provider (CWCloud included: its `/v1/ai/prompt` gets cwmerch's `system` prompt and `tools`);
   generated PDFs (accounting exports) come back as links to `GET /v1/ai-downloads/{id}`.
 * `GET /v1/ai/conversations/`, `GET /v1/ai/conversations/{id}`, `DELETE /v1/ai/conversations/` (`{ids?, all?}`)
 * `POST /v1/ai/cwcloud/adapter` — CWCloud external adapter: `{message}` or `{messages:[{role, message}]}`, optional `adapter` (subscription name) → `{status:"ok", message, usage:{prompt_tokens, completion_tokens, total_tokens}}`.

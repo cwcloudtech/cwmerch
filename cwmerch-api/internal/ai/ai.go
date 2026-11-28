@@ -2,19 +2,20 @@
 // and lets the model call back for help — the cwmerch API as a tool — before it
 // answers.
 //
-// Three wire formats, not three vendors. OpenAI's chat-completions is also what
+// Four wire formats, not four vendors. OpenAI's chat-completions is also what
 // Mistral, DeepSeek and OpenRouter speak, so a user pointing their connection at a
 // local gateway is a change of URL and nothing else. What the format decides is the
 // shape of the request body and where the key goes — a header named differently, a
 // system prompt that is a field rather than a message — and that is all this package
 // knows.
 //
-// Tool calling is the second thing the format decides. All three protocols let a
+// Tool calling is the second thing the format decides. All four protocols let a
 // request carry a list of functions the model may call, answer with a call rather
 // than prose, and take the call's result back in the next turn — but each spells it
 // differently: OpenAI's tool_calls / role=tool messages, Anthropic's tool_use /
-// tool_result content blocks, Gemini's functionCall / functionResponse parts. This
-// package normalizes the three into Tool / ToolCall / Turn so the caller runs one
+// tool_result content blocks, Gemini's functionCall / functionResponse parts,
+// CWCloud's tool_calls {id, name, args} / role=tool turns. This
+// package normalizes the four into Tool / ToolCall / Turn so the caller runs one
 // agent loop whatever the provider. A request with no tools behaves exactly as a
 // plain chat.
 //
@@ -73,7 +74,7 @@ func New() *Client {
 
 // Tool is a function the model may call to help itself answer: a name, a sentence
 // telling the model when to reach for it, and a JSON-Schema object describing its
-// arguments. The three formats all take this shape, under different field names.
+// arguments. The four formats all take this shape, under different field names.
 type Tool struct {
 	Name        string
 	Description string
@@ -596,16 +597,39 @@ func geminiTurn(turn Turn) geminiContent {
 //
 // POST {base}/v1/ai/prompt with X-Auth-Token. The model name is carried in the
 // `adapter` field (CWCloud's "adapters" are its model names), a turn's text is
-// in `message` (not `content`), and there is no system field — a leading
-// {role:"system"} message is the whole of a system prompt here. It cannot do
-// tools (the caller withholds them), and it answers HTTP 201, with `response`
-// being either a string or an array of strings. Usage keys are prompt/
+// in `message` (not `content`), and the system prompt has a field of its own.
+// Tools travel as {name, description, parameters}; the model's calls come back
+// as tool_calls [{id, name, args}] (args a JSON object), an assistant turn
+// echoes them the same way, and a tool result is a role=tool turn carrying
+// tool_call_id AND tool_name (Gemini behind CWAI matches by name).
+//
+// `tools` is ALWAYS sent, [] when none is offered: with `tools` present CWCloud
+// makes a plain model call under our system prompt and tools; with it absent it
+// runs its own assistant instead, which is not what cwmerch asks for.
+//
+// It answers HTTP 201, with `response` either a string or an array of strings
+// (empty when the model answered with tool calls). Usage keys are prompt/
 // completion/cached. A `ko` status can arrive on a 2xx, and 424 means the model
 // behind CWAI failed — its real cause is under `upstream`.
 
+type cwcloudToolCall struct {
+	ID   string          `json:"id"`
+	Name string          `json:"name"`
+	Args json.RawMessage `json:"args"`
+}
+
 type cwcloudMessage struct {
-	Role    string `json:"role"`
-	Message string `json:"message"`
+	Role       string            `json:"role"`
+	Message    string            `json:"message"`
+	ToolCalls  []cwcloudToolCall `json:"tool_calls,omitempty"`
+	ToolCallID string            `json:"tool_call_id,omitempty"`
+	ToolName   string            `json:"tool_name,omitempty"`
+}
+
+type cwcloudTool struct {
+	Name        string         `json:"name"`
+	Description string         `json:"description"`
+	Parameters  map[string]any `json:"parameters"`
 }
 
 // cwcloudEndpoint tolerates a base of the full endpoint, the /v1 root, or the
@@ -630,11 +654,28 @@ func cwcloudRole(role string) string {
 	switch role {
 	case models.AIChatRoleAssistant:
 		return models.AIChatRoleAssistant
-	case models.AIChatRoleSystem:
-		return models.AIChatRoleSystem
+	case RoleTool:
+		return RoleTool
 	default:
 		return models.AIChatRoleUser
 	}
+}
+
+// cwcloudTurn renders one transcript turn in CWAI's message shape.
+func cwcloudTurn(turn Turn) cwcloudMessage {
+	message := cwcloudMessage{Role: cwcloudRole(turn.Role), Message: turn.Text}
+	switch message.Role {
+	case RoleTool:
+		message.ToolCallID = turn.ToolCallID
+		message.ToolName = turn.ToolName
+	case models.AIChatRoleAssistant:
+		for _, call := range turn.ToolCalls {
+			message.ToolCalls = append(message.ToolCalls, cwcloudToolCall{
+				ID: call.ID, Name: call.Name, Args: rawObject(call.Args),
+			})
+		}
+	}
+	return message
 }
 
 // cwcloudText renders CWAI's `response`, which is a string or an array of
@@ -656,26 +697,32 @@ func cwcloudText(raw json.RawMessage) string {
 
 func (c *Client) askCWCloud(ctx context.Context, connection models.AIConnection,
 	model string, request Request) (Response, error) {
-	messages := make([]cwcloudMessage, 0, len(request.Messages)+1)
-	if request.System != "" {
-		messages = append(messages, cwcloudMessage{Role: models.AIChatRoleSystem, Message: request.System})
-	}
+	messages := make([]cwcloudMessage, 0, len(request.Messages))
 	for _, turn := range request.Messages {
-		if turn.Role == RoleTool {
-			continue // this format never produced a tool call, so there are none to feed back
+		messages = append(messages, cwcloudTurn(turn))
+	}
+	// Never nil: an absent `tools` makes CWCloud run its own assistant.
+	tools := make([]cwcloudTool, 0, len(request.Tools))
+	for _, tool := range request.Tools {
+		parameters := tool.Parameters
+		if parameters == nil {
+			parameters = map[string]any{"type": "object", "properties": map[string]any{}}
 		}
-		messages = append(messages, cwcloudMessage{Role: cwcloudRole(turn.Role), Message: turn.Text})
+		tools = append(tools, cwcloudTool{Name: tool.Name, Description: tool.Description, Parameters: parameters})
 	}
 
 	body := struct {
 		Adapter  string           `json:"adapter"`
+		System   string           `json:"system,omitempty"`
+		Tools    []cwcloudTool    `json:"tools"`
 		Messages []cwcloudMessage `json:"messages"`
 		Settings map[string]any   `json:"settings"`
 		// enable_history defaults to true server-side; a call on the user's
 		// behalf has no business filling their CWCloud prompt history — cwmerch
 		// keeps the conversation itself.
 		EnableHistory bool `json:"enable_history"`
-	}{Adapter: model, Messages: messages, Settings: map[string]any{"max_tokens": request.MaxTokens}}
+	}{Adapter: model, System: request.System, Tools: tools, Messages: messages,
+		Settings: map[string]any{"max_tokens": request.MaxTokens}}
 
 	encoded, err := json.Marshal(body)
 	if err != nil {
@@ -700,12 +747,14 @@ func (c *Client) askCWCloud(ctx context.Context, connection models.AIConnection,
 	}
 
 	var parsed struct {
-		Status   string          `json:"status"`
-		Response json.RawMessage `json:"response"`
-		Model    string          `json:"model"`
-		Usage    map[string]any  `json:"usage"`
-		Error    string          `json:"error"`
-		Upstream struct {
+		Status       string            `json:"status"`
+		Response     json.RawMessage   `json:"response"`
+		FinishReason string            `json:"finish_reason"`
+		ToolCalls    []cwcloudToolCall `json:"tool_calls"`
+		Model        string            `json:"model"`
+		Usage        map[string]any    `json:"usage"`
+		Error        string            `json:"error"`
+		Upstream     struct {
 			HTTPCode int             `json:"http_code"`
 			Body     json.RawMessage `json:"body"`
 			Source   string          `json:"source"`
@@ -733,16 +782,25 @@ func (c *Client) askCWCloud(ctx context.Context, connection models.AIConnection,
 		return Response{}, ErrRefused{Status: status, Detail: detail}
 	}
 
-	message := strings.TrimSpace(cwcloudText(parsed.Response))
-	if message == "" {
-		return Response{}, errors.New("ai: the provider returned no answer")
-	}
-	return Response{
-		Message: message,
+	response := Response{
+		Message: strings.TrimSpace(cwcloudText(parsed.Response)),
 		Usage:   parsed.Usage,
 		Model:   parsed.Model, // what CWCloud actually spent behind the adapter
 		Tokens:  UsageOf(parsed.Usage),
-	}, nil
+	}
+	for i, call := range parsed.ToolCalls {
+		id := strings.TrimSpace(call.ID)
+		if id == "" {
+			id = fmt.Sprintf("call_%d", i+1) // every call needs an id to match its result
+		}
+		response.ToolCalls = append(response.ToolCalls, ToolCall{
+			ID: id, Name: call.Name, Args: rawObject(call.Args),
+		})
+	}
+	if len(response.ToolCalls) == 0 && response.Message == "" {
+		return Response{}, errors.New("ai: the provider returned no answer")
+	}
+	return response, nil
 }
 
 // --- tool-argument helpers ---

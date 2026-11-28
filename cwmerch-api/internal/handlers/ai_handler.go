@@ -596,21 +596,10 @@ func (h *AIHandler) usable(r *http.Request, userID, connectionID string) (models
 // the cap one final call is made with tools withheld, so the loop ends in prose.
 const maxToolRounds = 4
 
-// noToolsRule is appended to the system prompt for a format that cannot call
-// tools (CWCloud/CWAI). The skill tells the assistant to read the cwmerch API
-// before answering; with no tools to do that, this stops it inventing figures.
-const noToolsRule = "IMPORTANT: for THIS answer you have NO tools. You cannot call the cwmerch API, " +
-	"read the shop's products, orders, customers or reports, change anything, or generate or download any file. " +
-	"Answer only from this conversation and the account context above. Never state specific figures " +
-	"(sales, totals, stock levels, order numbers, dates) as if you had looked them up: if the answer needs " +
-	"data you cannot reach, say so plainly and point the user to the cwmerch screen that holds it (orders, " +
-	"products, reports, accounting). Never claim an export was generated or a change was made, " +
-	"and never offer a download link."
-
 // chatAnswer runs the question through the model as an agent: it offers the
 // cwmerch_api tool, and whenever the model answers with a tool call rather than
 // prose it executes the tool, feeds the result back and asks again, up to
-// maxToolRounds times.
+// maxToolRounds times. Every format runs this loop, CWCloud (CWAI) included.
 func (h *AIHandler) chatAnswer(w http.ResponseWriter, r *http.Request, userID, connectionID string,
 	request ai.Request) (ai.Response, models.AIConnection, bool) {
 	connection, err := h.usable(r, userID, connectionID)
@@ -624,21 +613,6 @@ func (h *AIHandler) chatAnswer(w http.ResponseWriter, r *http.Request, userID, c
 			writeStoreError(w, err)
 		}
 		return ai.Response{}, models.AIConnection{}, false
-	}
-
-	// A format that cannot do tools (CWCloud/CWAI) is asked once, with the tool
-	// catalogue withheld AND a rule in the system prompt saying so — otherwise an
-	// assistant told at length to read the API before answering reports figures
-	// it never read.
-	if !models.AIFormatSupportsTools(connection.Format) {
-		request.Tools = nil
-		request.System = strings.TrimRight(request.System, "\n") + "\n\n" + noToolsRule
-		answer, err := h.client.Ask(r.Context(), connection, request)
-		if err != nil {
-			h.writeProviderError(w, connection, err)
-			return ai.Response{}, models.AIConnection{}, false
-		}
-		return answer, connection, true
 	}
 
 	request.Tools = h.aiTools()
