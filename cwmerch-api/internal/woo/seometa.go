@@ -662,17 +662,18 @@ type SEOHead struct {
 	FocusKeyphrase     string   `json:"focusKeyphrase,omitempty"`
 }
 
-func (h *SEOHead) finish(set SEOSettings, meta SEOMeta, image string) {
+func (h *SEOHead) finish(set SEOSettings, meta SEOMeta, image string, vars SEOVars) {
+	r := func(v string) string { return ReplaceSEOVars(v, vars) }
 	h.OpenGraph, h.Twitter, h.TwitterSite = set.OpenGraph, set.Twitter, set.TwitterSite
 	h.NoFollow = meta.NoFollow
 	h.Advanced = meta.Advanced
-	h.OGTitle = firstNonBlank(meta.OGTitle, h.Title)
-	h.OGDescription = firstNonBlank(meta.OGDescription, h.Description)
+	h.OGTitle = firstNonBlank(r(meta.OGTitle), h.Title)
+	h.OGDescription = firstNonBlank(r(meta.OGDescription), h.Description)
 	h.OGImage = firstNonBlank(meta.OGImage, image, set.OGDefaultImage)
-	h.TwitterTitle = firstNonBlank(meta.TwitterTitle, h.OGTitle)
-	h.TwitterDescription = firstNonBlank(meta.TwitterDescription, h.OGDescription)
+	h.TwitterTitle = firstNonBlank(r(meta.TwitterTitle), h.OGTitle)
+	h.TwitterDescription = firstNonBlank(r(meta.TwitterDescription), h.OGDescription)
 	h.TwitterImage = firstNonBlank(meta.TwitterImage, h.OGImage)
-	h.BreadcrumbTitle = meta.BreadcrumbTitle
+	h.BreadcrumbTitle = r(meta.BreadcrumbTitle)
 	h.FocusKeyphrase = meta.FocusKeyphrase
 	if meta.Canonical != "" {
 		h.Canonical = meta.Canonical
@@ -718,7 +719,7 @@ func (s *Store) ProductHead(ctx context.Context, set SEOSettings, p Product, met
 	if len(p.Images) > 0 {
 		image = p.Images[0].Src
 	}
-	h.finish(set, meta, image)
+	h.finish(set, meta, image, vars)
 	return h
 }
 
@@ -740,7 +741,7 @@ func (s *Store) TermHead(ctx context.Context, set SEOSettings, taxonomy string, 
 	if t.Image != nil {
 		image = t.Image.Src
 	}
-	h.finish(set, meta, image)
+	h.finish(set, meta, image, vars)
 	return h
 }
 
@@ -753,7 +754,7 @@ func (s *Store) HomeHead(ctx context.Context, set SEOSettings, image string) SEO
 	if h.Description == "" {
 		h.Description, h.DescriptionIsAuto = vars["sitedesc"], true
 	}
-	h.finish(set, SEOMeta{OGTitle: set.OGHomeTitle, OGDescription: set.OGHomeDesc, OGImage: set.OGHomeImage}, image)
+	h.finish(set, SEOMeta{OGTitle: set.OGHomeTitle, OGDescription: set.OGHomeDesc, OGImage: set.OGHomeImage}, image, vars)
 	return h
 }
 
@@ -763,7 +764,7 @@ func (s *Store) ShopHead(ctx context.Context, set SEOSettings, path string) SEOH
 	h := SEOHead{Kind: "shop", Canonical: s.SiteURL + path}
 	h.Title = ReplaceSEOVars(firstNonBlank(set.ShopTitle, defShopTitle), vars)
 	h.Description = ReplaceSEOVars(set.ShopDescription, vars)
-	h.finish(set, SEOMeta{}, "")
+	h.finish(set, SEOMeta{}, "", vars)
 	return h
 }
 
