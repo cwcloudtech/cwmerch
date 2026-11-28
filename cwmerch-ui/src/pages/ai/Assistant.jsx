@@ -35,8 +35,14 @@ const Assistant = ({ embedded = false }) => {
   const scrollRef = useRef(null);
   useSeo({ title: t("ai.title"), noindex: true });
 
+  // The selected subscription must still exist (deleted or recreated in the
+  // subscriptions tab, or elsewhere): otherwise back to the default one.
   useEffect(() => {
-    if (!connectionId && connections.length > 0) setConnectionId(connections[0].id);
+    if (connections.length === 0) {
+      if (connectionId) setConnectionId("");
+      return;
+    }
+    if (!connections.some((c) => c.id === connectionId)) setConnectionId(connections[0].id);
   }, [connections, connectionId]);
 
   useEffect(() => {
@@ -92,7 +98,17 @@ const Assistant = ({ embedded = false }) => {
     setMessages((m) => [...m, { role: "user", content: text }]);
     setSending(true);
     try {
-      const res = await ai.chat({ message: text, conversationId, connectionId });
+      let res;
+      try {
+        res = await ai.chat({ message: text, conversationId, connectionId });
+      } catch (err) {
+        // The subscription was deleted or recreated since the list was loaded
+        // (another tab...): reload the list and ask the default one.
+        if (!connectionId || err?.response?.status !== 404 || err?.response?.data?.i18n_code !== "errors.notFound") throw err;
+        await ai.loadConnections();
+        setConnectionId("");
+        res = await ai.chat({ message: text, conversationId });
+      }
       if (res.downloadTtlSeconds) setTtl(res.downloadTtlSeconds);
       setMessages((m) => [...m, { role: "assistant", content: res.message, model: res.model, createdAt: new Date().toISOString() }]);
       if (res.conversationId) setConversationId(res.conversationId);
