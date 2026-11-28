@@ -13,6 +13,7 @@ import {
   FiMenu,
   FiPercent,
   FiVolume2,
+  FiTrendingUp,
   FiSettings,
   FiShield,
   FiShoppingCart,
@@ -51,6 +52,7 @@ const NAV = [
   { to: "/admin/reports", key: "admin.nav.reports", icon: FiBarChart2 },
   { to: "/admin/accounting", key: "admin.nav.accounting", icon: FiFileText },
   { to: "/admin/appearance", key: "admin.nav.appearance", icon: FiDroplet },
+  { to: "/admin/seo", key: "admin.nav.seo", icon: FiTrendingUp },
   { to: "/admin/settings", key: "admin.nav.settings", icon: FiSettings },
   { to: "/admin/assistant", key: "admin.nav.assistant", icon: FiCpu },
 ];

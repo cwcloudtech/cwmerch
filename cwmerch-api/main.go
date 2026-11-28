@@ -205,6 +205,9 @@ func main() {
 		Clone:     handlers.NewCloneHandler(cloner, audit),
 		Commerce:  handlers.NewCommerceHandler(shop, pay, invoices, wooMailer, users, audit).WithSender(mailer),
 	}
+	seoSvc := handlers.NewSEOService(shop)
+	h.SEO = handlers.NewSEOHandler(seoSvc, audit)
+	h.AI.WithSEO(seoSvc)
 	h.Shop.WithPayments(pay)
 	userHandler.RegistrationAllowed = h.Commerce.RegistrationAllowed
 	h.OIDC.RegistrationAllowed = h.Commerce.RegistrationAllowed

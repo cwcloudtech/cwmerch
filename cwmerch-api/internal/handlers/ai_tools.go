@@ -21,6 +21,8 @@ import (
 // Auth / OrgMembership / RequireRole gates decide what comes back).
 const (
 	toolCwclockAPIName = "cwmerch_api"
+	// toolSEOName runs the SEO and readability analysis of a page.
+	toolSEOName = "cwmerch_seo_analyze"
 
 	// apiToolTimeout bounds one cwmerch_api call. Generous: a report over a long
 	// range, or an invoice render, takes a moment.
@@ -84,6 +86,29 @@ func (h *AIHandler) aiTools() []ai.Tool {
 				"required": []string{"path"},
 			},
 		},
+		{
+			Name: toolSEOName,
+			Description: "Run the SEO analysis (the classic WordPress SEO checks: focus keyphrase in title, introduction, meta description, slug, " +
+				"subheadings and image alts, keyphrase density, title width, meta description length, text length, links, images, " +
+				"product short description / SKU / GTIN) and the readability analysis (sentence and paragraph length, subheadings, " +
+				"transition words, passive voice, Flesch reading ease) of a storefront page, as the signed-in shop manager. " +
+				"Returns the page's SEO data (focus keyphrase, SEO title and meta description templates, robots, social), the resolved " +
+				"head (title, description as Google shows them), the template variables and every assessment with its rating " +
+				"(good / ok / bad). Use it to audit a product, a category, a tag, the home page or the shop page, then suggest concrete " +
+				"improvements (an SEO title under ~60 characters starting with the keyphrase, a 120-156 character meta description " +
+				"containing it, a better focus keyphrase, text changes...). To apply them, write with cwmerch_api PUT " +
+				"/v1/admin/seo/products/{id} or /v1/admin/seo/terms/{product_cat|product_tag}/{id} (the full SEO object) or PUT " +
+				"/v1/admin/products/{id} for the product's text, only after the user agreed.",
+			Parameters: map[string]any{
+				"type": "object",
+				"properties": map[string]any{
+					"kind": map[string]any{"type": "string", "enum": []string{"product", "category", "tag", "home", "shop"},
+						"description": "What to analyse (with id for product/category/tag). Omit when giving a path."},
+					"id":   map[string]any{"type": "integer", "description": "The product's or term's id."},
+					"path": map[string]any{"type": "string", "description": "Or the storefront path, e.g. '/product/oak-chair/'."},
+				},
+			},
+		},
 	}
 }
 
@@ -106,6 +131,15 @@ func (h *AIHandler) runTool(r *http.Request, call ai.ToolCall) string {
 				"agreement, and only then call again with confirmed=true"})
 		}
 		return h.toolCwclockAPI(r, args.Method, args.Path, args.Body)
+	case toolSEOName:
+		var args struct {
+			Kind string `json:"kind"`
+			ID   uint64 `json:"id"`
+			Path string `json:"path"`
+		}
+		_ = json.Unmarshal(call.Args, &args)
+		body, _ := json.Marshal(map[string]any{"kind": args.Kind, "id": args.ID, "path": args.Path})
+		return h.toolCwclockAPI(r, http.MethodPost, "/v1/admin/seo/analyze", body)
 	default:
 		return aiToolErrorJSON("unknown tool")
 	}
@@ -326,7 +360,7 @@ func readOnlyPost(path string) bool {
 	}
 	p = strings.TrimSuffix(p, "/")
 	switch {
-	case p == "/v1/shop/cart", p == "/v1/admin/clone/test":
+	case p == "/v1/shop/cart", p == "/v1/admin/clone/test", p == "/v1/admin/seo/analyze":
 		return true
 	case strings.HasPrefix(p, "/v1/admin/payment-providers/") && strings.HasSuffix(p, "/test") && strings.Count(p, "/") == 5:
 		return true

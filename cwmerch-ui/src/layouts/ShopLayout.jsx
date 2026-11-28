@@ -13,6 +13,7 @@ import { useVersion } from "../lib/manifest";
 import { api } from "../api/client";
 import { useAsync } from "../lib/useAsync";
 import Announcements from "../components/AnnouncementBanner";
+import SeoPageAudit from "../components/seo/SeoPageAudit";
 
 // Public storefront routes replaced by the "closed" page when the shop is off
 // (home, catalogue, product, category, tag, cart, checkout — not order-received/payment).
@@ -270,6 +271,7 @@ const ShopLayout = () => {
         {!closedHere && <Announcements items={announcements} home={location.pathname === "/"} />}
         {closedHere ? <ShopClosed /> : <Outlet />}
       </main>
+      {isAdmin && !closedHere && <SeoPageAudit />}
       <footer className="site-footer">
         <div className="container footer-grid">
           <div>

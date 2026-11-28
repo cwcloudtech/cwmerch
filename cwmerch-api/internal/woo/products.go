@@ -141,6 +141,11 @@ type Product struct {
 	Related           []uint64           `json:"related,omitempty"`
 	CreatedAt         time.Time          `json:"createdAt"`
 	UpdatedAt         time.Time          `json:"updatedAt"`
+	// The last SEO analysis scores (0-100) and focus keyphrase, for the
+	// back office's product list; nil = never analysed.
+	SEOScore         *int   `json:"seoScore,omitempty"`
+	ReadabilityScore *int   `json:"readabilityScore,omitempty"`
+	FocusKeyphrase   string `json:"focusKeyphrase,omitempty"`
 }
 
 type postRow struct {
@@ -306,7 +311,9 @@ func (s *Store) hydrate(ctx context.Context, rows []postRow, withVariations bool
 		m := metas[r.ID]
 		t := terms[r.ID]
 		p := Product{
-			ID: r.ID, Name: r.Title, Slug: r.Slug, Status: r.Status, Description: r.Content, ShortDescription: r.Excerpt,
+			SEOScore: scorePtr(m[wpseoPrefix+"linkdex"]), ReadabilityScore: scorePtr(m[wpseoPrefix+"content_score"]),
+			FocusKeyphrase: m[wpseoPrefix+"focuskw"],
+			ID:             r.ID, Name: r.Title, Slug: r.Slug, Status: r.Status, Description: r.Content, ShortDescription: r.Excerpt,
 			MenuOrder: r.MenuOrder, ReviewsAllowed: r.Comment == "open", CreatedAt: r.Created, UpdatedAt: r.Modified,
 			SKU: m["_sku"], RegularPrice: m.FloatPtr("_regular_price"), SalePrice: m.FloatPtr("_sale_price"),
 			DateOnSaleFrom: unixPtr(m["_sale_price_dates_from"]), DateOnSaleTo: unixPtr(m["_sale_price_dates_to"]),
@@ -825,8 +832,16 @@ func (s *Store) Products(ctx context.Context, q ProductQuery) (Paged[Product], e
 	if err != nil {
 		return Paged[Product]{}, err
 	}
+	if q.Public {
+		for i := range products {
+			products[i].hideSEO()
+		}
+	}
 	return NewPaged(products, total, page, perPage), nil
 }
+
+// hideSEO drops the back office's SEO fields from a visitor's view.
+func (p *Product) hideSEO() { p.SEOScore, p.ReadabilityScore, p.FocusKeyphrase = nil, nil, "" }
 
 // Product is one product by id (any status), with variations.
 func (s *Store) Product(ctx context.Context, id uint64) (Product, error) {
@@ -864,6 +879,7 @@ func (s *Store) PublicProduct(ctx context.Context, ref string) (Product, error) 
 		return Product{}, ErrNotFound
 	}
 	p := ps[0]
+	p.hideSEO()
 	if p.CatalogVisibility == "hidden" {
 		// Hidden products stay reachable by direct link in WooCommerce.
 		p.Related = []uint64{}

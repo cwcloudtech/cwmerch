@@ -115,6 +115,7 @@ const Catalogue = ({ mode = "shop", slug }) => {
     description: stripHtml(currentCategory?.description || currentTag?.description || "") || t("shop.seoDescription", { shop: shopName }),
     image: currentCategory?.image?.src,
     noindex: !!search,
+    server: true,
     jsonLd: {
       "@context": "https://schema.org",
       "@type": "BreadcrumbList",

@@ -65,6 +65,14 @@ func shopDocs() map[string]openapi.EndpointDoc {
 		"POST /v1/admin/orders/{id}/refunds": body(woo.RefundInput{}),
 		"POST /v1/admin/orders/{id}/emails":  body(orderEmailPayload{}),
 
+		// --- SEO ---
+		"PUT /v1/admin/seo/settings":              body(woo.SEOSettings{}),
+		"POST /v1/admin/seo/analyze":              body(seoTarget{}),
+		"POST /v1/admin/seo/suggest":              body(seoSuggestPayload{}),
+		"GET /v1/admin/seo/overview":              with(p("type"), p("search")),
+		"PUT /v1/admin/seo/products/{id}":         body(woo.SEOMeta{}),
+		"PUT /v1/admin/seo/terms/{taxonomy}/{id}": body(woo.SEOMeta{}),
+		"GET /v1/seo/head":                        with(p("path")),
 		// --- announcements ---
 		"GET /v1/admin/announcements/":     with(p("search"), p("status")),
 		"POST /v1/admin/announcements/":    body(woo.AnnouncementInput{}),

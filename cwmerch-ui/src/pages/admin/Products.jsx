@@ -8,6 +8,10 @@ import { useShop } from "../../context/ShopContext";
 import { useI18n } from "../../i18n/I18nContext";
 import { PageHead, SearchBox } from "../../components/admin";
 import { ConfirmModal, ErrorBox, Pagination, Spinner, Tabs } from "../../components/ui";
+import { ScoreDot } from "../../components/seo/SeoPanel";
+
+// The stored score (0-100) as a traffic light (no keyphrase: not analysed).
+const ratingOf = (score, keyphrase) => (score === undefined || score === null || score < 0 || !keyphrase ? "na" : score > 70 ? "good" : score > 40 ? "ok" : "bad");
 
 const STATUSES = ["", "publish", "draft", "pending", "private", "trash"];
 
@@ -141,6 +145,12 @@ const Products = () => {
                   {t("cart.price")}
                 </th>
                 <th scope="col">{t("product.categories")}</th>
+                <th scope="col" className="center">
+                  <abbr title={t("seo.seoAnalysis")}>SEO</abbr>
+                </th>
+                <th scope="col" className="center">
+                  <abbr title={t("seo.readability")}>{t("seo.readabilityShort")}</abbr>
+                </th>
                 <th scope="col">
                   <span className="sr-only">{t("admin.products.featured")}</span>
                 </th>
@@ -172,6 +182,12 @@ const Products = () => {
                     {p.type === "variable" && Number(p.priceMin) !== Number(p.priceMax) ? `${money(p.priceMin)} – ${money(p.priceMax)}` : p.price !== "" && p.price !== null ? money(p.price) : "—"}
                   </td>
                   <td className="small">{(p.categories || []).map((c) => c.name).join(", ") || "—"}</td>
+                  <td className="center">
+                    <ScoreDot rating={ratingOf(p.seoScore, p.focusKeyphrase)} title={`${t("seo.seoAnalysis")}: ${t(`seo.ratings.${ratingOf(p.seoScore, p.focusKeyphrase)}`)}`} />
+                  </td>
+                  <td className="center">
+                    <ScoreDot rating={ratingOf(p.readabilityScore, "x")} title={`${t("seo.readability")}: ${t(`seo.ratings.${ratingOf(p.readabilityScore, "x")}`)}`} />
+                  </td>
                   <td>
                     <button type="button" className={`icon-btn ${p.featured ? "is-on" : ""}`} onClick={() => toggleFeatured(p)} aria-pressed={!!p.featured} aria-label={t("admin.products.toggleFeatured", { name: p.name })}>
                       <FiStar />

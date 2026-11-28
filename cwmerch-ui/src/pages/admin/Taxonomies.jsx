@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
-import { FiEdit2, FiTrash2 } from "react-icons/fi";
+import { FiEdit2, FiTrash2, FiTrendingUp } from "react-icons/fi";
+import SeoEditModal from "../../components/seo/SeoEditModal";
 import { api, asArray } from "../../api/client";
 import { useAsync } from "../../lib/useAsync";
 import { slugify } from "../../lib/util";
@@ -12,7 +13,7 @@ import { ConfirmModal, ErrorBox, SelectField, Spinner, TextArea, TextField, Togg
 
 // TermManager is the WooCommerce "add on the left, table on the right" screen
 // shared by categories, tags and attribute terms.
-const TermManager = ({ title, endpoint, withParent, withImage, extraColumns = [], back, onChanged }) => {
+const TermManager = ({ title, endpoint, withParent, withImage, extraColumns = [], back, onChanged, seoKind }) => {
   const { t, errMsg } = useI18n();
   const { data: items, loading, error, reload } = useAsync(async () => asArray((await api.get(endpoint, { params: { perPage: 100 } })).data), [endpoint], []);
   const empty = { id: 0, name: "", slug: "", description: "", parent: 0, image: null, menuOrder: 0 };
@@ -20,6 +21,7 @@ const TermManager = ({ title, endpoint, withParent, withImage, extraColumns = []
   const [busy, setBusy] = useState(false);
   const [formError, setFormError] = useState(null);
   const [deleting, setDeleting] = useState(null);
+  const [seoOf, setSeoOf] = useState(null);
   const set = (k) => (v) => setForm((f) => ({ ...f, [k]: v }));
 
   const submit = async (e) => {
@@ -170,6 +172,11 @@ const TermManager = ({ title, endpoint, withParent, withImage, extraColumns = []
                         <button type="button" className="icon-btn" onClick={() => setForm({ ...empty, ...c })} aria-label={t("common.edit")}>
                           <FiEdit2 />
                         </button>
+                        {seoKind && (
+                          <button type="button" className="icon-btn" onClick={() => setSeoOf(c)} aria-label={t("seo.editSeo")} title={t("seo.editSeo")}>
+                            <FiTrendingUp />
+                          </button>
+                        )}
                         <button type="button" className="icon-btn danger" onClick={() => setDeleting(c)} aria-label={t("common.delete")}>
                           <FiTrash2 />
                         </button>
@@ -183,6 +190,7 @@ const TermManager = ({ title, endpoint, withParent, withImage, extraColumns = []
           )}
         </section>
       </div>
+      {seoOf && <SeoEditModal kind={seoKind} id={seoOf.id} name={seoOf.name} onClose={() => setSeoOf(null)} onSaved={() => setSeoOf(null)} />}
       <ConfirmModal
         show={!!deleting}
         title={t("admin.terms.deleteTitle")}
@@ -198,12 +206,12 @@ const TermManager = ({ title, endpoint, withParent, withImage, extraColumns = []
 export const Categories = () => {
   const { t } = useI18n();
   const { reload } = useShop();
-  return <TermManager title={t("admin.nav.categories")} endpoint="/v1/admin/categories" withParent withImage onChanged={reload} />;
+  return <TermManager title={t("admin.nav.categories")} endpoint="/v1/admin/categories" withParent withImage onChanged={reload} seoKind="category" />;
 };
 
 export const Tags = () => {
   const { t } = useI18n();
-  return <TermManager title={t("admin.nav.tags")} endpoint="/v1/admin/tags" />;
+  return <TermManager title={t("admin.nav.tags")} endpoint="/v1/admin/tags" seoKind="tag" />;
 };
 
 export const AttributeTerms = () => {

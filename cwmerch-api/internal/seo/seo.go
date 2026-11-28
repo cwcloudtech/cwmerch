@@ -51,6 +51,16 @@ type Head struct {
 	JSONLD      []any
 	Lang        string
 	Extra       map[string]string // og:price:amount...
+	// SEO is the page's resolved SEO head (robots, social...), when it has one.
+	SEO *woo.SEOHead
+}
+
+func (h *Head) apply(s woo.SEOHead) {
+	h.SEO = &s
+	h.Title, h.Description, h.Canonical, h.NoIndex = s.Title, s.Description, s.Canonical, s.NoIndex
+	if s.OGImage != "" {
+		h.Image = s.OGImage
+	}
 }
 
 var tags = regexp.MustCompile(`<[^>]+>`)
@@ -85,10 +95,28 @@ func (r *Renderer) Page(ctx context.Context, rawPath string) Head {
 		logo = app.Logo.Src
 	}
 	lang := r.woo.Lang(ctx)
+	set := r.woo.SEOSettings(ctx)
+	if set.WebsiteName != "" {
+		shop = set.WebsiteName
+	}
 	h := Head{Title: shop, Description: tagline, Canonical: r.publicUI + path, Image: logo, Type: "website", Lang: lang}
-	org := map[string]any{"@context": "https://schema.org", "@type": "Organization", "name": shop, "url": r.publicUI + "/"}
-	if logo != "" {
-		org["logo"] = logo
+	org := map[string]any{"@context": "https://schema.org", "@type": "Organization", "name": firstOf(set.CompanyName, shop), "url": r.publicUI + "/"}
+	if l := firstOf(set.CompanyLogo, logo); l != "" {
+		org["logo"] = l
+	}
+	if set.CompanyOrPerson == "person" && set.PersonName != "" {
+		org = map[string]any{"@context": "https://schema.org", "@type": "Person", "name": set.PersonName, "url": r.publicUI + "/"}
+	}
+	sameAs := []string{}
+	if set.FacebookSite != "" {
+		sameAs = append(sameAs, set.FacebookSite)
+	}
+	if set.TwitterSite != "" {
+		sameAs = append(sameAs, "https://x.com/"+set.TwitterSite)
+	}
+	sameAs = append(sameAs, set.OtherSocialURLs...)
+	if len(sameAs) > 0 {
+		org["sameAs"] = sameAs
 	}
 	crumbs := func(items ...[2]string) map[string]any {
 		list := []any{}
@@ -101,20 +129,21 @@ func (r *Renderer) Page(ctx context.Context, rawPath string) Head {
 	kind, ref := pl.RouteKind(path)
 	switch {
 	case kind == "home":
+		image := h.Image
+		if len(app.Banner.Slides) > 0 && app.Banner.Slides[0].Image != "" && image == "" {
+			image = app.Banner.Slides[0].Image
+		}
+		h.apply(r.woo.HomeHead(ctx, set, image))
 		h.JSONLD = []any{org, map[string]any{"@context": "https://schema.org", "@type": "WebSite", "name": shop, "url": r.publicUI + "/",
 			"potentialAction": map[string]any{"@type": "SearchAction", "target": r.publicUI + pl.ShopPath() + "?search={search_term_string}", "query-input": "required name=search_term_string"}}}
 		if len(app.Banner.Slides) > 0 && app.Banner.Slides[0].Image != "" && h.Image == "" {
 			h.Image = app.Banner.Slides[0].Image
 		}
 	case kind == "shop":
-		h.Title = titleOf("Shop", shop)
-		switch lang {
-		case "fr":
-			h.Title = titleOf("Boutique", shop)
-		case "ar":
-			h.Title = titleOf("المتجر", shop)
+		h.apply(r.woo.ShopHead(ctx, set, pl.ShopPath()))
+		if h.Description == "" {
+			h.Description = tagline
 		}
-		h.Canonical = r.publicUI + pl.ShopPath()
 		h.JSONLD = []any{crumbs([2]string{shop, "/"}, [2]string{h.Title, pl.ShopPath()})}
 	case kind == "category" || kind == "tag":
 		tax := woo.TaxCategory
@@ -126,34 +155,22 @@ func (r *Renderer) Page(ctx context.Context, rawPath string) Head {
 			h.NoIndex = true
 			break
 		}
-		h.Title = titleOf(t.Name, shop)
-		if t.Description != "" {
-			h.Description = PlainText(t.Description, 160)
+		meta, _ := r.woo.TermSEO(ctx, tax, t.ID)
+		h.apply(r.woo.TermHead(ctx, set, tax, t, meta))
+		if h.Description == "" {
+			h.Description = tagline
 		}
-		if t.Image != nil {
-			h.Image = t.Image.Src
-		}
-		h.Canonical = r.publicUI + t.Path
-		h.JSONLD = []any{crumbs([2]string{shop, "/"}, [2]string{t.Name, t.Path})}
+		h.JSONLD = []any{crumbs([2]string{shop, "/"}, [2]string{firstOf(meta.BreadcrumbTitle, t.Name), t.Path})}
 	case kind == "product":
 		p, err := r.woo.PublicProduct(ctx, ref)
 		if err != nil {
 			h.NoIndex, h.Title = true, titleOf("Not found", shop)
 			break
 		}
-		h.Title = titleOf(p.Name, shop)
-		desc := p.ShortDescription
-		if strings.TrimSpace(PlainText(desc, 10)) == "" {
-			desc = p.Description
-		}
-		h.Description = PlainText(desc, 160)
+		meta, _ := r.woo.ProductSEO(ctx, p.ID)
+		h.apply(r.woo.ProductHead(ctx, set, p, meta))
 		h.Type = "product"
-		h.Canonical = r.publicUI + p.Path
-		if len(p.Images) > 0 {
-			h.Image = p.Images[0].Src
-		}
-		h.NoIndex = p.CatalogVisibility == "hidden"
-		h.JSONLD = []any{r.productLD(ctx, p), r.crumbsFor(ctx, p, shop)}
+		h.JSONLD = []any{r.productLD(ctx, p), r.crumbsFor(ctx, p, shop, meta)}
 		cur := r.woo.Currency(ctx)
 		h.Extra = map[string]string{"product:price:amount": fmt.Sprintf("%.2f", p.Price), "product:price:currency": cur,
 			"og:price:amount": fmt.Sprintf("%.2f", p.Price), "og:price:currency": cur,
@@ -178,15 +195,34 @@ func titleOf(page, shop string) string {
 	return page + " – " + shop
 }
 
-func (r *Renderer) crumbsFor(ctx context.Context, p woo.Product, shop string) map[string]any {
+func firstOf(values ...string) string {
+	for _, v := range values {
+		if strings.TrimSpace(v) != "" {
+			return strings.TrimSpace(v)
+		}
+	}
+	return ""
+}
+
+func (r *Renderer) crumbsFor(ctx context.Context, p woo.Product, shop string, meta woo.SEOMeta) map[string]any {
 	base := r.publicUI
 	list := []any{map[string]any{"@type": "ListItem", "position": 1, "name": shop, "item": base + "/"}}
 	if len(p.Categories) > 0 {
-		if t, err := r.woo.Term(ctx, woo.TaxCategory, p.Categories[0].ID); err == nil {
-			list = append(list, map[string]any{"@type": "ListItem", "position": 2, "name": t.Name, "item": base + t.Path})
+		catID := p.Categories[0].ID
+		for _, c := range p.Categories {
+			if c.ID == meta.PrimaryCategory {
+				catID = c.ID
+			}
+		}
+		if t, err := r.woo.Term(ctx, woo.TaxCategory, catID); err == nil {
+			name := t.Name
+			if tm, err := r.woo.TermSEO(ctx, woo.TaxCategory, t.ID); err == nil && tm.BreadcrumbTitle != "" {
+				name = tm.BreadcrumbTitle
+			}
+			list = append(list, map[string]any{"@type": "ListItem", "position": 2, "name": name, "item": base + t.Path})
 		}
 	}
-	list = append(list, map[string]any{"@type": "ListItem", "position": len(list) + 1, "name": p.Name, "item": base + p.Path})
+	list = append(list, map[string]any{"@type": "ListItem", "position": len(list) + 1, "name": firstOf(meta.BreadcrumbTitle, p.Name), "item": base + p.Path})
 	return map[string]any{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": list}
 }
 
@@ -223,16 +259,38 @@ func (r *Renderer) productLD(ctx context.Context, p woo.Product) map[string]any 
 	return ld
 }
 
+// Social is a network's card.
+type Social struct {
+	Enabled                   bool
+	Title, Description, Image string
+}
+
+// SocialOf is the Open Graph and X cards of a head.
+func SocialOf(h Head) (Social, Social) {
+	og := Social{true, h.Title, h.Description, h.Image}
+	tw := og
+	if s := h.SEO; s != nil {
+		og = Social{s.OpenGraph, s.OGTitle, s.OGDescription, s.OGImage}
+		tw = Social{s.Twitter, s.TwitterTitle, s.TwitterDescription, s.TwitterImage}
+	}
+	return og, tw
+}
+
 // RenderHead is the HTML of a head.
 func RenderHead(h Head) string {
 	e := html.EscapeString
 	var b strings.Builder
 	b.WriteString("<title>" + e(h.Title) + "</title>\n")
 	b.WriteString(`<meta name="description" content="` + e(h.Description) + `">` + "\n")
-	b.WriteString(`<link rel="canonical" href="` + e(h.Canonical) + `">` + "\n")
-	if h.NoIndex {
+	if !h.NoIndex {
+		b.WriteString(`<link rel="canonical" href="` + e(h.Canonical) + `">` + "\n")
+	}
+	switch {
+	case h.SEO != nil:
+		b.WriteString(`<meta name="robots" content="` + e(h.SEO.Robots) + `">` + "\n")
+	case h.NoIndex:
 		b.WriteString(`<meta name="robots" content="noindex,follow">` + "\n")
-	} else {
+	default:
 		b.WriteString(`<meta name="robots" content="index,follow,max-image-preview:large">` + "\n")
 	}
 	meta := func(attr, k, v string) {
@@ -240,20 +298,28 @@ func RenderHead(h Head) string {
 			b.WriteString(`<meta ` + attr + `="` + e(k) + `" content="` + e(v) + `">` + "\n")
 		}
 	}
-	meta("property", "og:type", h.Type)
-	meta("property", "og:title", h.Title)
-	meta("property", "og:description", h.Description)
-	meta("property", "og:url", h.Canonical)
-	meta("property", "og:image", h.Image)
-	meta("property", "og:locale", map[string]string{"fr": "fr_FR", "en": "en_US", "ar": "ar_AR"}[h.Lang])
-	card := "summary"
-	if h.Image != "" {
-		card = "summary_large_image"
+	og, tw := SocialOf(h)
+	if og.Enabled {
+		meta("property", "og:type", h.Type)
+		meta("property", "og:title", og.Title)
+		meta("property", "og:description", og.Description)
+		meta("property", "og:url", h.Canonical)
+		meta("property", "og:image", og.Image)
+		meta("property", "og:locale", map[string]string{"fr": "fr_FR", "en": "en_US", "ar": "ar_AR"}[h.Lang])
 	}
-	meta("name", "twitter:card", card)
-	meta("name", "twitter:title", h.Title)
-	meta("name", "twitter:description", h.Description)
-	meta("name", "twitter:image", h.Image)
+	if tw.Enabled {
+		card := "summary"
+		if tw.Image != "" {
+			card = "summary_large_image"
+		}
+		meta("name", "twitter:card", card)
+		meta("name", "twitter:title", tw.Title)
+		meta("name", "twitter:description", tw.Description)
+		meta("name", "twitter:image", tw.Image)
+		if h.SEO != nil && h.SEO.TwitterSite != "" {
+			meta("name", "twitter:site", "@"+h.SEO.TwitterSite)
+		}
+	}
 	for k, v := range h.Extra {
 		meta("property", k, v)
 	}
@@ -341,6 +407,7 @@ type sURL struct {
 // Sitemap lists the home, shop, categories, tags and every visible product.
 func (r *Renderer) Sitemap(ctx context.Context) ([]byte, error) {
 	set := urlset{NS: "http://www.sitemaps.org/schemas/sitemap/0.9"}
+	seo := r.woo.SEOSettings(ctx)
 	pl := r.woo.Permalinks(ctx)
 	set.URLs = append(set.URLs, sURL{Loc: r.publicUI + "/"}, sURL{Loc: r.publicUI + pl.ShopPath()})
 	for _, tax := range []string{woo.TaxCategory, woo.TaxTag} {
@@ -349,7 +416,8 @@ func (r *Renderer) Sitemap(ctx context.Context) ([]byte, error) {
 			return nil, err
 		}
 		for _, t := range terms {
-			if t.Count > 0 && t.Path != "" {
+			meta, _ := r.woo.TermSEO(ctx, tax, t.ID)
+			if t.Count > 0 && t.Path != "" && woo.TermIndexable(seo, tax, meta) {
 				set.URLs = append(set.URLs, sURL{Loc: r.publicUI + t.Path})
 			}
 		}
@@ -359,7 +427,18 @@ func (r *Renderer) Sitemap(ctx context.Context) ([]byte, error) {
 		if err != nil {
 			return nil, err
 		}
+		ids := make([]uint64, len(res.Items))
+		for i, p := range res.Items {
+			ids[i] = p.ID
+		}
+		metas, err := r.woo.ProductsSEO(ctx, ids)
+		if err != nil {
+			return nil, err
+		}
 		for _, p := range res.Items {
+			if !woo.ProductIndexable(seo, p, metas[p.ID]) {
+				continue
+			}
 			set.URLs = append(set.URLs, sURL{Loc: r.publicUI + p.Path, LastMod: p.UpdatedAt.Format("2006-01-02")})
 		}
 		if page >= res.TotalPages {

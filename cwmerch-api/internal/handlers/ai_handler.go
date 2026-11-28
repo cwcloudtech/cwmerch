@@ -64,6 +64,8 @@ type AIHandler struct {
 	// cost is visible without opening the audit trail. Optional and best-effort (a
 	// nil/disabled transport is a no-op and never affects the answer).
 	disc *notify.Discord
+	// seo backs the SEO suggestions (POST /v1/admin/seo/suggest).
+	seo *SEOService
 }
 
 // NewAIHandler builds the /v1/ai handler. users resolves a share target and its

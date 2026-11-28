@@ -11,6 +11,7 @@ import { PageHead, uploadMedia, UploadButton } from "../../components/admin";
 import { ConfirmModal, ErrorBox, Field, SelectField, Spinner, Tabs, TextArea, TextField, Toggle } from "../../components/ui";
 import ProductAttributes from "./ProductAttributes";
 import RichTextEditor from "../../components/RichTextEditor";
+import SeoPanel, { EMPTY_SEO, ScoreBadges } from "../../components/seo/SeoPanel";
 import ProductVariations from "./ProductVariations";
 
 const NEW_PRODUCT = {
@@ -102,11 +103,28 @@ const ProductEditor = () => {
   const [tagText, setTagText] = useState("");
   const [deleting, setDeleting] = useState(null);
   const [uploading, setUploading] = useState(false);
+  const [seo, setSeo] = useState(EMPTY_SEO);
+  const [seoAnalysis, setSeoAnalysis] = useState(null);
 
   const { data: categories } = useAsync(async () => asArray((await api.get("/v1/admin/categories", { params: { perPage: 100 } })).data), [], []);
   const { data: allTags } = useAsync(async () => asArray((await api.get("/v1/admin/tags", { params: { perPage: 100 } })).data), [], []);
   const { data: shippingClasses } = useAsync(async () => asArray((await api.get("/v1/admin/shipping/classes")).data), [], []);
   const { data: taxClasses } = useAsync(async () => asArray((await api.get("/v1/admin/tax-classes")).data), [], []);
+
+  useEffect(() => {
+    if (isNew) {
+      setSeo(EMPTY_SEO);
+      return undefined;
+    }
+    let cancelled = false;
+    api
+      .get(`/v1/admin/seo/products/${id}`)
+      .then(({ data }) => !cancelled && setSeo({ ...EMPTY_SEO, ...data.meta }))
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [id, isNew]);
 
   useEffect(() => {
     if (isNew) {
@@ -161,6 +179,10 @@ const ProductEditor = () => {
     try {
       const body = buildPayload(overrides);
       const { data } = isNew ? await api.post("/v1/admin/products", body) : await api.put(`/v1/admin/products/${p.id}`, body);
+      if (data?.id) {
+        const saved = await api.put(`/v1/admin/seo/products/${data.id}`, seo);
+        setSeo({ ...EMPTY_SEO, ...saved.data.meta });
+      }
       toast.success(t("admin.products.saved"));
       if (data?.id) {
         setP({ ...NEW_PRODUCT, ...data });
@@ -425,6 +447,32 @@ const ProductEditor = () => {
           <section className="card">
             <RichTextEditor label={t("admin.products.shortDescription")} value={p.shortDescription} onChange={set("shortDescription")} minHeight={120} />
           </section>
+
+          <SeoPanel
+            kind="product"
+            id={isNew ? 0 : p.id}
+            meta={seo}
+            onChange={(m) => {
+              setSeo(m);
+            }}
+            draft={{
+              name: p.name,
+              slug: p.slug || slugify(p.name),
+              description: p.description,
+              shortDescription: p.shortDescription,
+              sku: p.sku,
+              status: p.status,
+              categories: p.categories.map((c) => ({ id: c.id, name: c.name || categories.find((x) => x.id === c.id)?.name || "" })),
+              images: p.images.map((img) => ({ src: img.src, alt: img.alt || "" })),
+            }}
+            onApplyDraft={(field, value) => {
+              if (field === "slug") set("slug")(slugify(value));
+              else if (field === "text") set("description")(value);
+              else if (field === "shortDescription") set("shortDescription")(value);
+            }}
+            categories={p.categories.map((c) => ({ id: c.id, name: c.name || categories.find((x) => x.id === c.id)?.name || String(c.id) }))}
+            onAnalysis={setSeoAnalysis}
+          />
         </div>
 
         <aside className="stack-lg">
@@ -438,6 +486,7 @@ const ProductEditor = () => {
               options={["visible", "catalog", "search", "hidden"].map((x) => ({ value: x, label: t(`visibility.${x}`) }))}
             />
             <Toggle checked={!!p.featured} onChange={set("featured")} label={t("admin.products.featured")} />
+            {seoAnalysis && <ScoreBadges analysis={seoAnalysis} />}
             <div className="row wrap">
               <button type="submit" className="btn btn-primary" disabled={busy}>
                 {isNew ? t("admin.products.create") : t("common.update")}

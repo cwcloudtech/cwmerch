@@ -97,6 +97,7 @@ const Home = () => {
     title: appearance?.tagline ? `${shopName} – ${appearance.tagline}` : shopName,
     description: appearance?.tagline || settings.description,
     image: appearance?.banner?.slides?.[0]?.image || appearance?.logo?.src,
+    server: true,
     jsonLd: [
       { "@context": "https://schema.org", "@type": "WebSite", name: shopName, url: origin, potentialAction: { "@type": "SearchAction", target: `${origin}/shop?search={search_term_string}`, "query-input": "required name=search_term_string" } },
       { "@context": "https://schema.org", "@type": "Organization", name: shopName, url: origin, ...(appearance?.logo?.src ? { logo: appearance.logo.src } : {}) },

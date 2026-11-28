@@ -68,6 +68,7 @@ const (
 	AuditGatewayUpdated    = "gateway.updated"
 	AuditEmailUpdated      = "email.updated"
 	AuditAppearanceUpdated = "appearance.updated"
+	AuditSEOUpdated        = "seo.updated"
 
 	AuditReviewCreated  = "review.created"
 	AuditReviewUpdated  = "review.updated"
@@ -107,7 +108,7 @@ var AuditActions = []string{
 	AuditTermSaved, AuditTermDeleted, AuditAttributeSaved, AuditAttributeDeleted, AuditMediaUploaded,
 	AuditOrderPlaced, AuditOrderCreated, AuditOrderUpdated, AuditOrderStatusChanged, AuditOrderDeleted, AuditOrderNoteAdded,
 	AuditOrderNoteDeleted, AuditOrderRefunded, AuditOrderEmailSent, AuditCouponSaved, AuditCouponDeleted,
-	AuditAnnouncementSaved, AuditAnnouncementDeleted, AuditRootUserCreated,
+	AuditAnnouncementSaved, AuditAnnouncementDeleted, AuditSEOUpdated, AuditRootUserCreated,
 	AuditSettingsUpdated, AuditTaxSaved, AuditTaxDeleted, AuditShippingSaved, AuditShippingDeleted, AuditGatewayUpdated,
 	AuditEmailUpdated, AuditAppearanceUpdated, AuditReviewCreated, AuditReviewUpdated, AuditReviewDeleted, AuditReviewReplied,
 	AuditCustomerUpdate, AuditContactSent, AuditAICall,

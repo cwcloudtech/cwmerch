@@ -35,6 +35,7 @@ type Handlers struct {
 	Customers  *handlers.CustomersHandler
 	Commerce   *handlers.CommerceHandler
 	Clone      *handlers.CloneHandler
+	SEO        *handlers.SEOHandler
 }
 
 // Config is what the router needs besides the handlers.
@@ -180,6 +181,7 @@ func New(h Handlers, c Config) http.Handler {
 			}
 		})
 		r.Get("/seo/html", h.Shop.SEOHTML)
+		r.Get("/seo/head", h.SEO.Head)
 		r.Get("/payments/{provider}/webhook", h.Commerce.Webhook)
 		r.Post("/payments/{provider}/webhook", h.Commerce.Webhook)
 		r.Get("/media/*", h.Shop.Media)
@@ -298,6 +300,17 @@ func New(h Handlers, c Config) http.Handler {
 					r.Get("/{id}", h.Customers.Get)
 					r.Put("/{id}", h.Customers.Update)
 					r.Get("/{id}/orders", h.Customers.Orders)
+				})
+				r.Route("/seo", func(r chi.Router) {
+					r.Get("/settings", h.SEO.Settings)
+					r.Put("/settings", h.SEO.UpdateSettings)
+					r.Post("/analyze", h.SEO.Analyze)
+					r.Post("/suggest", h.AI.SEOSuggest)
+					r.Get("/overview", h.SEO.Overview)
+					r.Get("/products/{id}", h.SEO.Product)
+					r.Put("/products/{id}", h.SEO.SaveProduct)
+					r.Get("/terms/{taxonomy}/{id}", h.SEO.Term)
+					r.Put("/terms/{taxonomy}/{id}", h.SEO.SaveTerm)
 				})
 				r.Route("/announcements", func(r chi.Router) {
 					r.Get("/", h.ShopAdmin.Announcements)

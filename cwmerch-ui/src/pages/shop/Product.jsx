@@ -291,6 +291,7 @@ const Product = ({ slug }) => {
     description: product ? truncate(product.shortDescription || product.description, 160) : "",
     image: firstImage,
     type: "product",
+    server: !!product,
     jsonLd: product
       ? [
           {
